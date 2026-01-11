@@ -131,17 +131,6 @@ st.markdown("""
         font-weight: 500;
     }
 
-    /* Hide Streamlit branding and dev menu */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stDeployButton {display: none;}
-    div[data-testid="stToolbar"] {display: none;}
-    div[data-testid="stDecoration"] {display: none;}
-
-    /* Hide "Manage app" button specifically */
-    button[data-testid="manage-app-button"] {display: none;}
-    div.stActionButton {display: none;}
-
     /* Success message */
     .stSuccess {
         background-color: #d1fae5;
@@ -157,6 +146,24 @@ st.markdown("""
         border-left: 4px solid #f59e0b;
         border-radius: 6px;
     }
+
+    /* Hide Streamlit default elements for professional look */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display: none;}
+
+    /* Hide rerun/always rerun buttons */
+    button[title="Rerun"] {
+        display: none;
+    }
+
+    div[data-testid="stToolbar"] {
+        display: none;
+    }
+
+    /* Hide manage app button */
+    button[data-testid="manage-app-button"] {display: none;}
+    div.stActionButton {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -169,7 +176,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar for file selection and parameters
-st.sidebar.title("🔧 Settings")
+st.sidebar.markdown("### 🔧 Settings")
 st.sidebar.markdown("---")
 
 # Use point cloud visualization by default (3D boxes removed due to performance)
@@ -197,11 +204,11 @@ if uploaded_file is not None:
 
 # Skip rows parameter
 skip_rows = st.sidebar.number_input(
-    "Number of Header Lines:",
+    "Rows to skip (metadata):",
     min_value=0,
     max_value=10,
     value=3,
-    help="Number of Header Lines"
+    help="Number of metadata rows to skip (3 for Datamine format)"
 )
 
 # ============================================================================
