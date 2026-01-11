@@ -380,11 +380,11 @@ if csv_file is not None:
                 value_attr=config.get('value_attr')
             )
 
-        # Block Sum button
+        # Process Block button
         col_sum1, col_sum2, col_sum3, col_sum4 = st.columns([1, 1, 1, 1])
 
         with col_sum1:
-            if st.button("📊 Apply Block Sum", type="secondary", use_container_width=True):
+            if st.button("📊 Apply Process Block", type="secondary", use_container_width=True):
                 if not st.session_state.is_summed:
                     # Save original if not already saved
                     st.session_state.original_df = viz.df.copy()
@@ -676,7 +676,7 @@ else:
             <li>Pilih value attribute yang ingin dirata-rata (misalnya: grade, tonnage)</li>
             <li>Hasil: kolom baru <code>avg_{kategori}_{attribute}</code> untuk setiap kategori</li>
         </ul>
-        <p style='color: #059669; font-weight: 600; margin-top: 1rem;'>✓ Klik "Apply Block Sum" → Reset/Export tersedia</p>
+        <p style='color: #059669; font-weight: 600; margin-top: 1rem;'>✓ Klik "Apply Process Block" → Reset/Export tersedia</p>
     </div>
     """, unsafe_allow_html=True)
 
