@@ -131,6 +131,14 @@ st.markdown("""
         font-weight: 500;
     }
 
+    /* Hide Streamlit branding and dev menu */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stDeployButton {display: none;}
+    button[kind="header"] {display: none;}
+    div[data-testid="stToolbar"] {display: none;}
+
     /* Success message */
     .stSuccess {
         background-color: #d1fae5;
