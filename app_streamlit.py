@@ -134,10 +134,13 @@ st.markdown("""
     /* Hide Streamlit branding and dev menu */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     .stDeployButton {display: none;}
-    button[kind="header"] {display: none;}
     div[data-testid="stToolbar"] {display: none;}
+    div[data-testid="stDecoration"] {display: none;}
+
+    /* Hide "Manage app" button specifically */
+    button[data-testid="manage-app-button"] {display: none;}
+    div.stActionButton {display: none;}
 
     /* Success message */
     .stSuccess {
