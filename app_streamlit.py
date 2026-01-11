@@ -276,9 +276,9 @@ if csv_file is not None:
         # Calculation Mode
         calc_mode = st.radio(
             "📊 Calculation Mode:",
-            ["Sum All", "Calculate Thickness", "Calculate Stripping Ratio", "Block Sum", "Block Average"],
+            ["Calculate Thickness", "Calculate Stripping Ratio", "Calculate Block Sum", "Calculate Block Average"],
             horizontal=False,
-            help="Sum All: Standard vertical sum | Thickness: Sum by category | SR: OB/Ore ratio | Block Sum: Sum attribute values by category | Block Average: Average attribute values by category"
+            help="Thickness: Calculate thickness by category | SR: OB/Ore ratio | Block Sum: Sum attribute values by category | Block Average: Average attribute values by category"
         )
 
         # Get categorical columns
@@ -292,7 +292,7 @@ if csv_file is not None:
         ore_categories = None
         value_attr = None
 
-        if calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio", "Block Sum", "Block Average"] and cat_cols:
+        if calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio", "Calculate Block Sum", "Calculate Block Average"] and cat_cols:
             # Select categorical attribute
             categorical_attr = st.selectbox(
                 "Select Categorical Attribute:",
@@ -329,7 +329,7 @@ if csv_file is not None:
                             help="Select categories considered as Ore"
                         )
 
-                elif calc_mode in ["Block Sum", "Block Average"]:
+                elif calc_mode in ["Calculate Block Sum", "Calculate Block Average"]:
                     # Select categories to filter
                     selected_categories = st.multiselect(
                         "Select Categories to Calculate:",
@@ -343,13 +343,13 @@ if csv_file is not None:
                         value_attr = st.selectbox(
                             "Select Value Attribute:",
                             numeric_cols,
-                            help=f"Choose numeric attribute to {'sum' if calc_mode == 'Block Sum' else 'average'}"
+                            help=f"Choose numeric attribute to {'sum' if calc_mode == 'Calculate Block Sum' else 'average'}"
                         )
                     else:
                         st.warning("⚠️ No numeric attributes found in dataset.")
 
-        elif calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio", "Block Sum", "Block Average"] and not cat_cols:
-            st.warning("⚠️ No categorical attributes found in dataset. Please use 'Sum All' mode.")
+        elif calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio", "Calculate Block Sum", "Calculate Block Average"] and not cat_cols:
+            st.warning("⚠️ No categorical attributes found in dataset.")
 
         # Store configuration in session state
         if 'block_sum_config' not in st.session_state:
@@ -368,15 +368,14 @@ if csv_file is not None:
         if st.session_state.is_summed:
             config = st.session_state.block_sum_config
             mode_map = {
-                'Sum All': 'all',
                 'Calculate Thickness': 'thickness',
                 'Calculate Stripping Ratio': 'stripping_ratio',
-                'Block Sum': 'block_sum',
-                'Block Average': 'block_average'
+                'Calculate Block Sum': 'block_sum',
+                'Calculate Block Average': 'block_average'
             }
             viz.sum_vertical_blocks(
                 categorical_attr=config.get('categorical_attr'),
-                calc_mode=mode_map[config.get('calc_mode', 'Sum All')],
+                calc_mode=mode_map[config.get('calc_mode', 'Calculate Thickness')],
                 selected_categories=config.get('selected_categories'),
                 ob_categories=config.get('ob_categories'),
                 ore_categories=config.get('ore_categories'),
@@ -395,16 +394,15 @@ if csv_file is not None:
                     # Apply vertical sum with configuration
                     config = st.session_state.block_sum_config
                     mode_map = {
-                        'Sum All': 'all',
                         'Calculate Thickness': 'thickness',
                         'Calculate Stripping Ratio': 'stripping_ratio',
-                        'Block Sum': 'block_sum',
-                        'Block Average': 'block_average'
+                        'Calculate Block Sum': 'block_sum',
+                        'Calculate Block Average': 'block_average'
                     }
 
                     viz.sum_vertical_blocks(
                         categorical_attr=config.get('categorical_attr'),
-                        calc_mode=mode_map[config.get('calc_mode', 'Sum All')],
+                        calc_mode=mode_map[config.get('calc_mode', 'Calculate Thickness')],
                         selected_categories=config.get('selected_categories'),
                         ob_categories=config.get('ob_categories'),
                         ore_categories=config.get('ore_categories'),
@@ -412,8 +410,8 @@ if csv_file is not None:
                     )
 
                     st.session_state.is_summed = True
-                    mode_name = config.get('calc_mode', 'Sum All')
-                    st.success(f"✓ Block Sum applied ({mode_name}): {len(viz.df):,} blocks")
+                    mode_name = config.get('calc_mode', 'Calculate Thickness')
+                    st.success(f"✓ Process applied ({mode_name}): {len(viz.df):,} blocks")
                     st.rerun()  # Rerun to update visualization
                 else:
                     st.info("Already in summed mode. Click 'Reset' to restore original.")
@@ -648,11 +646,6 @@ else:
     st.markdown("""
     <div style='background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 1.5rem; border-left: 5px solid #10b981;'>
         <h3 style='color: #10b981; margin-top: 0;'>2️⃣ Block Sum Configuration</h3>
-        <p style='color: #4b5563; font-weight: 600; margin-top: 1rem;'>Mode Sum All:</p>
-        <ul style='color: #6b7280; margin-top: 0.5rem;'>
-            <li>Penjumlahan standar semua blok vertikal per kolom (X,Y)</li>
-            <li>Hasil: 1 blok per kolom dengan semua attribute di-sum</li>
-        </ul>
         <p style='color: #4b5563; font-weight: 600; margin-top: 1rem;'>Mode Calculate Thickness:</p>
         <ul style='color: #6b7280; margin-top: 0.5rem;'>
             <li>Pilih categorical attribute (lithology/zone)</li>
@@ -665,14 +658,14 @@ else:
             <li>Hasil: <code>thickness_OB</code>, <code>thickness_Ore</code>, <code>stripping_ratio</code></li>
             <li>SR = thickness_OB / thickness_Ore per kolom</li>
         </ul>
-        <p style='color: #4b5563; font-weight: 600; margin-top: 1rem;'>Mode Block Sum:</p>
+        <p style='color: #4b5563; font-weight: 600; margin-top: 1rem;'>Mode Calculate Block Sum:</p>
         <ul style='color: #6b7280; margin-top: 0.5rem;'>
             <li>Pilih categorical attribute (misalnya: material_type)</li>
             <li>Pilih kategori yang ingin dihitung (misalnya: ore, waste)</li>
             <li>Pilih value attribute yang ingin dijumlahkan (misalnya: grade, tonnage)</li>
             <li>Hasil: kolom baru <code>sum_{kategori}_{attribute}</code> untuk setiap kategori</li>
         </ul>
-        <p style='color: #4b5563; font-weight: 600; margin-top: 1rem;'>Mode Block Average:</p>
+        <p style='color: #4b5563; font-weight: 600; margin-top: 1rem;'>Mode Calculate Block Average:</p>
         <ul style='color: #6b7280; margin-top: 0.5rem;'>
             <li>Pilih categorical attribute (misalnya: material_type)</li>
             <li>Pilih kategori yang ingin dihitung (misalnya: ore, waste)</li>
@@ -712,13 +705,5 @@ st.sidebar.markdown("""
 <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem; border-radius: 8px; text-align: center;'>
     <p style='color: white; font-weight: 700; font-size: 1.1rem; margin: 0;'>Block Model Visualizer</p>
     <p style='color: #e0e7ff; font-size: 0.9rem; margin: 0.5rem 0 0 0;'>v2.1</p>
-</div>
-<div style='margin-top: 1rem; padding: 0.75rem; background: #f9fafb; border-radius: 6px;'>
-    <p style='color: #4b5563; font-size: 0.85rem; margin: 0; line-height: 1.6;'>
-        ✨ Interactive web interface<br>
-        🎯 3D point cloud visualization<br>
-        📊 Thickness & SR calculation<br>
-        📁 Multiple file support
-    </p>
 </div>
 """, unsafe_allow_html=True)
