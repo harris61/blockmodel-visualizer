@@ -201,11 +201,11 @@ if uploaded_file is not None:
 
 # Skip rows parameter
 skip_rows = st.sidebar.number_input(
-    "Rows to skip (metadata):",
+    "Number of Header Lines:",
     min_value=0,
     max_value=10,
     value=3,
-    help="Number of metadata rows to skip (3 for Datamine format)"
+    help="Number of Header Lines"
 )
 
 # ============================================================================
@@ -273,20 +273,23 @@ if csv_file is not None:
         # Calculation Mode
         calc_mode = st.radio(
             "📊 Calculation Mode:",
-            ["Sum All", "Calculate Thickness", "Calculate Stripping Ratio"],
-            horizontal=True,
-            help="Sum All: Standard vertical sum | Thickness: Sum by category | SR: OB/Ore ratio"
+            ["Sum All", "Calculate Thickness", "Calculate Stripping Ratio", "Block Sum", "Block Average"],
+            horizontal=False,
+            help="Sum All: Standard vertical sum | Thickness: Sum by category | SR: OB/Ore ratio | Block Sum: Sum attribute values by category | Block Average: Average attribute values by category"
         )
 
         # Get categorical columns
         cat_cols = viz.df.select_dtypes(include=['object']).columns.tolist()
+        # Get numeric columns for Block Sum/Average
+        numeric_cols = viz.df.select_dtypes(include=[np.number]).columns.tolist()
 
         categorical_attr = None
         selected_categories = None
         ob_categories = None
         ore_categories = None
+        value_attr = None
 
-        if calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio"] and cat_cols:
+        if calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio", "Block Sum", "Block Average"] and cat_cols:
             # Select categorical attribute
             categorical_attr = st.selectbox(
                 "Select Categorical Attribute:",
@@ -323,7 +326,26 @@ if csv_file is not None:
                             help="Select categories considered as Ore"
                         )
 
-        elif calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio"] and not cat_cols:
+                elif calc_mode in ["Block Sum", "Block Average"]:
+                    # Select categories to filter
+                    selected_categories = st.multiselect(
+                        "Select Categories to Calculate:",
+                        unique_cats,
+                        default=unique_cats[:2] if len(unique_cats) >= 2 else unique_cats,
+                        help="Select one or more categories to include in calculation"
+                    )
+
+                    # Select numeric attribute to sum/average
+                    if numeric_cols:
+                        value_attr = st.selectbox(
+                            "Select Value Attribute:",
+                            numeric_cols,
+                            help=f"Choose numeric attribute to {'sum' if calc_mode == 'Block Sum' else 'average'}"
+                        )
+                    else:
+                        st.warning("⚠️ No numeric attributes found in dataset.")
+
+        elif calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio", "Block Sum", "Block Average"] and not cat_cols:
             st.warning("⚠️ No categorical attributes found in dataset. Please use 'Sum All' mode.")
 
         # Store configuration in session state
@@ -335,7 +357,8 @@ if csv_file is not None:
             'categorical_attr': categorical_attr,
             'selected_categories': selected_categories,
             'ob_categories': ob_categories,
-            'ore_categories': ore_categories
+            'ore_categories': ore_categories,
+            'value_attr': value_attr
         }
 
         # Apply sum if in summed mode (after rerun)
@@ -344,14 +367,17 @@ if csv_file is not None:
             mode_map = {
                 'Sum All': 'all',
                 'Calculate Thickness': 'thickness',
-                'Calculate Stripping Ratio': 'stripping_ratio'
+                'Calculate Stripping Ratio': 'stripping_ratio',
+                'Block Sum': 'block_sum',
+                'Block Average': 'block_average'
             }
             viz.sum_vertical_blocks(
                 categorical_attr=config.get('categorical_attr'),
                 calc_mode=mode_map[config.get('calc_mode', 'Sum All')],
                 selected_categories=config.get('selected_categories'),
                 ob_categories=config.get('ob_categories'),
-                ore_categories=config.get('ore_categories')
+                ore_categories=config.get('ore_categories'),
+                value_attr=config.get('value_attr')
             )
 
         # Block Sum button
@@ -368,7 +394,9 @@ if csv_file is not None:
                     mode_map = {
                         'Sum All': 'all',
                         'Calculate Thickness': 'thickness',
-                        'Calculate Stripping Ratio': 'stripping_ratio'
+                        'Calculate Stripping Ratio': 'stripping_ratio',
+                        'Block Sum': 'block_sum',
+                        'Block Average': 'block_average'
                     }
 
                     viz.sum_vertical_blocks(
@@ -376,7 +404,8 @@ if csv_file is not None:
                         calc_mode=mode_map[config.get('calc_mode', 'Sum All')],
                         selected_categories=config.get('selected_categories'),
                         ob_categories=config.get('ob_categories'),
-                        ore_categories=config.get('ore_categories')
+                        ore_categories=config.get('ore_categories'),
+                        value_attr=config.get('value_attr')
                     )
 
                     st.session_state.is_summed = True
@@ -583,8 +612,11 @@ else:
                 <li><strong>Hanya bisa mengolah Blok Model</strong>, tidak bisa mengolah Stratigraphic Model</li>
                 <li><strong>Format file yang didukung:</strong> Blok Model hanya dalam format .csv, baik dalam format Surpac, Datamine, dll</li>
                 <li><strong>Visualisasi menggunakan Point Cloud</strong> untuk alasan performa</li>
-                <li><strong>Calculate Thickness dan Calculate Stripping Ratio:</strong> attribute yang bisa dibaca hanya yang bertipe data Text atau Categorical</li>
+                <li><strong>Calculate Thickness, Calculate Stripping Ratio, Block Sum, dan Block Average:</strong> attribute categorical yang bisa dibaca hanya yang bertipe data Text atau Categorical</li>
             </ol>
+            <div style='background: #fef3c7; padding: 0.75rem; border-radius: 6px; margin-top: 1rem; border-left: 4px solid #f59e0b;'>
+                <p style='color: #78350f; margin: 0;'><strong>💡 Tips:</strong> Buat attribute di dalam block model berupa klasifikasi material dengan tipe data teks terlebih dahulu</p>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -629,6 +661,20 @@ else:
             <li>Tentukan kategori OB/Waste dan Ore</li>
             <li>Hasil: <code>thickness_OB</code>, <code>thickness_Ore</code>, <code>stripping_ratio</code></li>
             <li>SR = thickness_OB / thickness_Ore per kolom</li>
+        </ul>
+        <p style='color: #4b5563; font-weight: 600; margin-top: 1rem;'>Mode Block Sum:</p>
+        <ul style='color: #6b7280; margin-top: 0.5rem;'>
+            <li>Pilih categorical attribute (misalnya: material_type)</li>
+            <li>Pilih kategori yang ingin dihitung (misalnya: ore, waste)</li>
+            <li>Pilih value attribute yang ingin dijumlahkan (misalnya: grade, tonnage)</li>
+            <li>Hasil: kolom baru <code>sum_{kategori}_{attribute}</code> untuk setiap kategori</li>
+        </ul>
+        <p style='color: #4b5563; font-weight: 600; margin-top: 1rem;'>Mode Block Average:</p>
+        <ul style='color: #6b7280; margin-top: 0.5rem;'>
+            <li>Pilih categorical attribute (misalnya: material_type)</li>
+            <li>Pilih kategori yang ingin dihitung (misalnya: ore, waste)</li>
+            <li>Pilih value attribute yang ingin dirata-rata (misalnya: grade, tonnage)</li>
+            <li>Hasil: kolom baru <code>avg_{kategori}_{attribute}</code> untuk setiap kategori</li>
         </ul>
         <p style='color: #059669; font-weight: 600; margin-top: 1rem;'>✓ Klik "Apply Block Sum" → Reset/Export tersedia</p>
     </div>

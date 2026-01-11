@@ -222,7 +222,8 @@ class BlockModelVisualizer:
         return cat_cols
 
     def sum_vertical_blocks(self, categorical_attr=None, calc_mode='all',
-                            selected_categories=None, ob_categories=None, ore_categories=None):
+                            selected_categories=None, ob_categories=None, ore_categories=None,
+                            value_attr=None):
         """
         Sum blocks vertically (along Z-axis) for each X,Y coordinate
 
@@ -235,13 +236,16 @@ class BlockModelVisualizer:
         - 'all': Sum all blocks (default, original behavior)
         - 'thickness': Calculate thickness for selected categories
         - 'stripping_ratio': Calculate OB/Ore thickness and SR
+        - 'block_sum': Sum value attribute for selected categories
+        - 'block_average': Average value attribute for selected categories
 
         Args:
             categorical_attr (str): Name of categorical attribute for classification
-            calc_mode (str): 'all', 'thickness', or 'stripping_ratio'
-            selected_categories (list): Categories to calculate thickness for
+            calc_mode (str): 'all', 'thickness', 'stripping_ratio', 'block_sum', or 'block_average'
+            selected_categories (list): Categories to calculate thickness/sum/average for
             ob_categories (list): Categories considered as Overburden/Waste
             ore_categories (list): Categories considered as Ore
+            value_attr (str): Name of numeric attribute to sum/average (for block_sum/block_average mode)
 
         Returns:
             self (for method chaining)
@@ -259,6 +263,9 @@ class BlockModelVisualizer:
             elif calc_mode == 'stripping_ratio':
                 print(f"OB categories: {ob_categories}")
                 print(f"Ore categories: {ore_categories}")
+            elif calc_mode in ['block_sum', 'block_average']:
+                print(f"Selected categories: {selected_categories}")
+                print(f"Value attribute: {value_attr}")
         print(f"Original blocks: {len(self.df):,}")
 
         x_col = self.coord_cols['x']
@@ -358,6 +365,30 @@ class BlockModelVisualizer:
                 max_z_row['thickness_Ore'] = thickness_ore
                 max_z_row['stripping_ratio'] = sr
 
+            elif calc_mode == 'block_sum' and categorical_attr and selected_categories and value_attr:
+                # Sum value attribute for selected categories
+                for category in selected_categories:
+                    category_blocks = group[group[categorical_attr] == category]
+                    if value_attr in group.columns:
+                        sum_value = category_blocks[value_attr].sum()
+                    else:
+                        sum_value = 0
+
+                    col_name = f'sum_{category}_{value_attr}'
+                    max_z_row[col_name] = sum_value
+
+            elif calc_mode == 'block_average' and categorical_attr and selected_categories and value_attr:
+                # Average value attribute for selected categories
+                for category in selected_categories:
+                    category_blocks = group[group[categorical_attr] == category]
+                    if value_attr in group.columns and len(category_blocks) > 0:
+                        avg_value = category_blocks[value_attr].mean()
+                    else:
+                        avg_value = np.nan
+
+                    col_name = f'avg_{category}_{value_attr}'
+                    max_z_row[col_name] = avg_value
+
             # Keep dimensions from the top block (maintain grid spacing for Vulcan compatibility)
             # dim_z should remain as grid spacing (zinc) - do NOT sum it
             # This ensures blocks can be placed in Vulcan's regular grid structure
@@ -371,7 +402,7 @@ class BlockModelVisualizer:
         print(f"Reduction: {len(self.df.groupby([x_col, y_col]))} unique (X,Y) positions")
         print(f"Each position now has 1 block at highest Z level")
 
-        # Print summary for thickness/SR calculations
+        # Print summary for thickness/SR/block_sum/block_average calculations
         if calc_mode == 'thickness' and selected_categories:
             print("\n--- Thickness Calculation Summary ---")
             for category in selected_categories:
@@ -394,6 +425,27 @@ class BlockModelVisualizer:
                 sr_median = self.df['stripping_ratio'].median()
                 print(f"Average SR: {sr_mean:.2f}")
                 print(f"Median SR: {sr_median:.2f}")
+
+        elif calc_mode == 'block_sum' and selected_categories and value_attr:
+            print(f"\n--- Block Sum Calculation Summary ({value_attr}) ---")
+            for category in selected_categories:
+                col_name = f'sum_{category}_{value_attr}'
+                if col_name in self.df.columns:
+                    total = self.df[col_name].sum()
+                    avg = self.df[col_name].mean()
+                    max_val = self.df[col_name].max()
+                    min_val = self.df[col_name].min()
+                    print(f"{category}: Total = {total:.2f}, Average = {avg:.2f}, Max = {max_val:.2f}, Min = {min_val:.2f}")
+
+        elif calc_mode == 'block_average' and selected_categories and value_attr:
+            print(f"\n--- Block Average Calculation Summary ({value_attr}) ---")
+            for category in selected_categories:
+                col_name = f'avg_{category}_{value_attr}'
+                if col_name in self.df.columns:
+                    overall_avg = self.df[col_name].mean()
+                    max_val = self.df[col_name].max()
+                    min_val = self.df[col_name].min()
+                    print(f"{category}: Overall Average = {overall_avg:.2f}, Max = {max_val:.2f}, Min = {min_val:.2f}")
 
         return self
 
