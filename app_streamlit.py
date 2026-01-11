@@ -157,21 +157,6 @@ st.markdown("""
         border-left: 4px solid #f59e0b;
         border-radius: 6px;
     }
-
-    /* Hide Streamlit default elements for professional look */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stDeployButton {display: none;}
-
-    /* Hide rerun/always rerun buttons */
-    button[title="Rerun"] {
-        display: none;
-    }
-
-    div[data-testid="stToolbar"] {
-        display: none;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -184,7 +169,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar for file selection and parameters
-st.sidebar.markdown("### 🔧 Settings")
+st.sidebar.title("🔧 Settings")
 st.sidebar.markdown("---")
 
 # Use point cloud visualization by default (3D boxes removed due to performance)
