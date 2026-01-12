@@ -700,26 +700,28 @@ else:
 # Footer with modern styling
 st.sidebar.markdown("---")
 
-# Read and encode logo
-import base64
-with open("2.png", "rb") as img_file:
-    logo_base64 = base64.b64encode(img_file.read()).decode()
-
-# Create footer HTML with embedded logo
-footer_html = f"""
-<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem; border-radius: 8px; text-align: center;'>
+# Header section (text only)
+st.sidebar.markdown("""
+<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem; border-radius: 8px 8px 0px 0px; text-align: center;'>
     <p style='color: white; font-weight: 700; font-size: 1.1rem; margin: 0;'>Block Model Visualizer</p>
     <p style='color: #e0e7ff; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;'>v1.0</p>
     <div style='border-top: 1px solid rgba(255,255,255,0.3); padding-top: 1rem;'>
         <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.3rem 0 0.2rem 0;'>Created by:</p>
         <a href='https://www.linkedin.com/in/harristio-adam/' target='_blank' style='color: white; text-decoration: none; font-weight: 600; font-size: 0.85rem;'>Harristio Adam</a>
-
         <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.8rem 0 0.3rem 0;'>Powered by:</p>
-        <a href='https://www.linkedin.com/company/soft-roc' target='_blank'>
-            <img src='data:image/png;base64,{logo_base64}' style='max-width: 100px; height: auto; margin: 0 auto;' alt='Soft.Roc'>
-        </a>
     </div>
 </div>
-"""
+""", unsafe_allow_html=True)
 
-st.sidebar.markdown(footer_html, unsafe_allow_html=True)
+# Logo section (using st.image)
+col_left, col_center, col_right = st.sidebar.columns([1, 2, 1])
+with col_center:
+    # Clickable wrapper using markdown
+    st.markdown('<a href="https://www.linkedin.com/company/soft-roc" target="_blank">', unsafe_allow_html=True)
+    st.image("2.png", width=100)
+    st.markdown('</a>', unsafe_allow_html=True)
+
+# Footer bottom (complete the gradient box)
+st.sidebar.markdown("""
+<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0rem 1rem 0.5rem 1rem; border-radius: 0px 0px 8px 8px; text-align: center; margin-top: -1.5rem;'></div>
+""", unsafe_allow_html=True)
