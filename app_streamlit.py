@@ -700,8 +700,13 @@ else:
 # Footer with modern styling
 st.sidebar.markdown("---")
 
-# Using container with expander alternative
-footer_html = """
+# Read and encode logo
+import base64
+with open("2.png", "rb") as img_file:
+    logo_base64 = base64.b64encode(img_file.read()).decode()
+
+# Create footer HTML with embedded logo
+footer_html = f"""
 <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem; border-radius: 8px; text-align: center;'>
     <p style='color: white; font-weight: 700; font-size: 1.1rem; margin: 0;'>Block Model Visualizer</p>
     <p style='color: #e0e7ff; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;'>v1.0</p>
@@ -709,9 +714,10 @@ footer_html = """
         <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.3rem 0;'>
             Created by: <a href='https://www.linkedin.com/in/harristio-adam/' target='_blank' style='color: white; text-decoration: none; font-weight: 600;'>Harristio Adam</a>
         </p>
-        <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.3rem 0;'>
-            Powered by: <a href='https://www.linkedin.com/company/soft-roc' target='_blank' style='color: white; text-decoration: none; font-weight: 600;'>Soft.Roc</a>
-        </p>
+        <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.3rem 0 0.5rem 0;'>Powered by:</p>
+        <a href='https://www.linkedin.com/company/soft-roc' target='_blank'>
+            <img src='data:image/png;base64,{logo_base64}' style='max-width: 100px; height: auto; margin: 0 auto;' alt='Soft.Roc'>
+        </a>
     </div>
 </div>
 """
