@@ -29,6 +29,7 @@ wheels/
 # Temporary files
 temp_uploaded.csv
 *.tmp
+tmpclaude-*
 
 # IDE
 .vscode/
