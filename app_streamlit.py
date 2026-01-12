@@ -699,18 +699,21 @@ else:
 
 # Footer with modern styling
 st.sidebar.markdown("---")
-st.sidebar.markdown("""
+
+# Using container with expander alternative
+footer_html = """
 <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem; border-radius: 8px; text-align: center;'>
     <p style='color: white; font-weight: 700; font-size: 1.1rem; margin: 0;'>Block Model Visualizer</p>
-    <p style='color: #e0e7ff; font-size: 0.9rem; margin: 0.5rem 0 0 0;'>v1.0</p>
-
-    <div style='margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);'>
+    <p style='color: #e0e7ff; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;'>v1.0</p>
+    <div style='border-top: 1px solid rgba(255,255,255,0.3); padding-top: 1rem;'>
         <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.3rem 0;'>
             Created by: <a href='https://www.linkedin.com/in/harristio-adam/' target='_blank' style='color: white; text-decoration: none; font-weight: 600;'>Harristio Adam</a>
         </p>
-        <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.3rem 0 0 0;'>
+        <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.3rem 0;'>
             Powered by: <a href='https://www.linkedin.com/company/soft-roc' target='_blank' style='color: white; text-decoration: none; font-weight: 600;'>Soft.Roc</a>
         </p>
     </div>
 </div>
-""", unsafe_allow_html=True)
+"""
+
+st.sidebar.markdown(footer_html, unsafe_allow_html=True)
