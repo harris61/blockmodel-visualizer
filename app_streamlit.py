@@ -179,9 +179,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar for file selection and parameters
-st.sidebar.markdown("### 🔧 Settings")
-st.sidebar.markdown("---")
-
 # Use point cloud visualization by default (3D boxes removed due to performance)
 viz_type = "Point Cloud (Fast)"
 
