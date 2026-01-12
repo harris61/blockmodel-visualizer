@@ -287,23 +287,23 @@ class BlockModelVisualizer:
         max_z_row['stripping_ratio'] = sr
 
     def _calculate_block_sum_for_group(self, group, categorical_attr, selected_categories, value_attr, max_z_row):
-        """Calculate block sum for selected categories"""
-        for category in selected_categories:
-            category_blocks = group[group[categorical_attr] == category]
-            sum_value = category_blocks[value_attr].sum() if value_attr in group.columns else 0
-            col_name = f'sum_{category}_{value_attr}'.lower()
-            max_z_row[col_name] = sum_value
+        """Calculate block sum for selected categories (total of all selected categories)"""
+        # Filter blocks that belong to any of the selected categories
+        category_blocks = group[group[categorical_attr].isin(selected_categories)]
+        sum_value = category_blocks[value_attr].sum() if value_attr in group.columns else 0
+        col_name = f'sum_{value_attr}'.lower()
+        max_z_row[col_name] = sum_value
 
     def _calculate_block_average_for_group(self, group, categorical_attr, selected_categories, value_attr, max_z_row):
-        """Calculate block average for selected categories"""
-        for category in selected_categories:
-            category_blocks = group[group[categorical_attr] == category]
-            if value_attr in group.columns and len(category_blocks) > 0:
-                avg_value = category_blocks[value_attr].mean()
-            else:
-                avg_value = np.nan
-            col_name = f'avg_{category}_{value_attr}'.lower()
-            max_z_row[col_name] = avg_value
+        """Calculate block average for selected categories (average of all selected categories)"""
+        # Filter blocks that belong to any of the selected categories
+        category_blocks = group[group[categorical_attr].isin(selected_categories)]
+        if value_attr in group.columns and len(category_blocks) > 0:
+            avg_value = category_blocks[value_attr].mean()
+        else:
+            avg_value = np.nan
+        col_name = f'avg_{value_attr}'.lower()
+        max_z_row[col_name] = avg_value
 
     def _aggregate_block_group(self, group, z_col, sum_cols, categorical_cols,
                                calc_mode, categorical_attr, selected_categories,
@@ -370,24 +370,24 @@ class BlockModelVisualizer:
 
         elif calc_mode == 'block_sum' and selected_categories and value_attr:
             print(f"\n--- Block Sum Calculation Summary ({value_attr}) ---")
-            for category in selected_categories:
-                col_name = f'sum_{category}_{value_attr}'.lower()
-                if col_name in self.df.columns:
-                    total = self.df[col_name].sum()
-                    avg = self.df[col_name].mean()
-                    max_val = self.df[col_name].max()
-                    min_val = self.df[col_name].min()
-                    print(f"{category}: Total = {total:.2f}, Average = {avg:.2f}, Max = {max_val:.2f}, Min = {min_val:.2f}")
+            print(f"Selected categories: {', '.join(selected_categories)}")
+            col_name = f'sum_{value_attr}'.lower()
+            if col_name in self.df.columns:
+                total = self.df[col_name].sum()
+                avg = self.df[col_name].mean()
+                max_val = self.df[col_name].max()
+                min_val = self.df[col_name].min()
+                print(f"Total Sum = {total:.2f}, Average = {avg:.2f}, Max = {max_val:.2f}, Min = {min_val:.2f}")
 
         elif calc_mode == 'block_average' and selected_categories and value_attr:
             print(f"\n--- Block Average Calculation Summary ({value_attr}) ---")
-            for category in selected_categories:
-                col_name = f'avg_{category}_{value_attr}'.lower()
-                if col_name in self.df.columns:
-                    overall_avg = self.df[col_name].mean()
-                    max_val = self.df[col_name].max()
-                    min_val = self.df[col_name].min()
-                    print(f"{category}: Overall Average = {overall_avg:.2f}, Max = {max_val:.2f}, Min = {min_val:.2f}")
+            print(f"Selected categories: {', '.join(selected_categories)}")
+            col_name = f'avg_{value_attr}'.lower()
+            if col_name in self.df.columns:
+                overall_avg = self.df[col_name].mean()
+                max_val = self.df[col_name].max()
+                min_val = self.df[col_name].min()
+                print(f"Overall Average = {overall_avg:.2f}, Max = {max_val:.2f}, Min = {min_val:.2f}")
 
     def sum_vertical_blocks(self,
                             categorical_attr: Optional[str] = None,

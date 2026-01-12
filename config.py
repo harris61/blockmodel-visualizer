@@ -56,10 +56,10 @@ COLOR_MODE_MAPPING: Dict[str, str] = {
 # CALCULATION MODES
 # ==============================================================================
 CALC_MODE_OPTIONS: List[str] = [
-    "Calculate Thickness",
-    "Calculate Stripping Ratio",
     "Calculate Block Sum",
-    "Calculate Block Average"
+    "Calculate Block Average",
+    "Calculate Thickness",
+    "Calculate Stripping Ratio"
 ]
 
 CALC_MODE_MAPPING: Dict[str, str] = {
