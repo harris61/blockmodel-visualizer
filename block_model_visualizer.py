@@ -337,7 +337,7 @@ class BlockModelVisualizer:
                         # Fallback: count blocks (assume uniform height)
                         thickness = len(category_blocks)
 
-                    col_name = f'thickness_{category}'
+                    col_name = f'thickness_{category}'.lower()
                     max_z_row[col_name] = thickness
 
             elif calc_mode == 'stripping_ratio' and categorical_attr and ob_categories and ore_categories:
@@ -361,8 +361,8 @@ class BlockModelVisualizer:
                 else:
                     sr = np.nan  # or np.inf
 
-                max_z_row['thickness_OB'] = thickness_ob
-                max_z_row['thickness_Ore'] = thickness_ore
+                max_z_row['thickness_ob'] = thickness_ob
+                max_z_row['thickness_ore'] = thickness_ore
                 max_z_row['stripping_ratio'] = sr
 
             elif calc_mode == 'block_sum' and categorical_attr and selected_categories and value_attr:
@@ -374,7 +374,7 @@ class BlockModelVisualizer:
                     else:
                         sum_value = 0
 
-                    col_name = f'sum_{category}_{value_attr}'
+                    col_name = f'sum_{category}_{value_attr}'.lower()
                     max_z_row[col_name] = sum_value
 
             elif calc_mode == 'block_average' and categorical_attr and selected_categories and value_attr:
@@ -386,7 +386,7 @@ class BlockModelVisualizer:
                     else:
                         avg_value = np.nan
 
-                    col_name = f'avg_{category}_{value_attr}'
+                    col_name = f'avg_{category}_{value_attr}'.lower()
                     max_z_row[col_name] = avg_value
 
             # Keep dimensions from the top block (maintain grid spacing for Vulcan compatibility)
@@ -406,7 +406,7 @@ class BlockModelVisualizer:
         if calc_mode == 'thickness' and selected_categories:
             print("\n--- Thickness Calculation Summary ---")
             for category in selected_categories:
-                col_name = f'thickness_{category}'
+                col_name = f'thickness_{category}'.lower()
                 if col_name in self.df.columns:
                     total = self.df[col_name].sum()
                     avg = self.df[col_name].mean()
@@ -414,12 +414,12 @@ class BlockModelVisualizer:
 
         elif calc_mode == 'stripping_ratio':
             print("\n--- Stripping Ratio Summary ---")
-            if 'thickness_OB' in self.df.columns:
-                print(f"Total OB Thickness: {self.df['thickness_OB'].sum():.2f}")
-                print(f"Average OB Thickness: {self.df['thickness_OB'].mean():.2f}")
-            if 'thickness_Ore' in self.df.columns:
-                print(f"Total Ore Thickness: {self.df['thickness_Ore'].sum():.2f}")
-                print(f"Average Ore Thickness: {self.df['thickness_Ore'].mean():.2f}")
+            if 'thickness_ob' in self.df.columns:
+                print(f"Total OB Thickness: {self.df['thickness_ob'].sum():.2f}")
+                print(f"Average OB Thickness: {self.df['thickness_ob'].mean():.2f}")
+            if 'thickness_ore' in self.df.columns:
+                print(f"Total Ore Thickness: {self.df['thickness_ore'].sum():.2f}")
+                print(f"Average Ore Thickness: {self.df['thickness_ore'].mean():.2f}")
             if 'stripping_ratio' in self.df.columns:
                 sr_mean = self.df['stripping_ratio'].mean()
                 sr_median = self.df['stripping_ratio'].median()
@@ -429,7 +429,7 @@ class BlockModelVisualizer:
         elif calc_mode == 'block_sum' and selected_categories and value_attr:
             print(f"\n--- Block Sum Calculation Summary ({value_attr}) ---")
             for category in selected_categories:
-                col_name = f'sum_{category}_{value_attr}'
+                col_name = f'sum_{category}_{value_attr}'.lower()
                 if col_name in self.df.columns:
                     total = self.df[col_name].sum()
                     avg = self.df[col_name].mean()
@@ -440,7 +440,7 @@ class BlockModelVisualizer:
         elif calc_mode == 'block_average' and selected_categories and value_attr:
             print(f"\n--- Block Average Calculation Summary ({value_attr}) ---")
             for category in selected_categories:
-                col_name = f'avg_{category}_{value_attr}'
+                col_name = f'avg_{category}_{value_attr}'.lower()
                 if col_name in self.df.columns:
                     overall_avg = self.df[col_name].mean()
                     max_val = self.df[col_name].max()

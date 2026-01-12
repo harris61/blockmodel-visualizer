@@ -79,17 +79,23 @@ st.markdown("""
         padding-top: 2rem;
     }
 
-    /* Button styling */
-    .stButton > button {
+    /* Button styling - apply same gradient style to ALL buttons */
+    .stButton > button,
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
         border-radius: 6px;
         font-weight: 500;
-        border: none;
-        transition: all 0.3s ease;
+        border: 1px solid #000000 !important;
     }
 
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    /* Additional selector for button styling */
+    div[data-testid="stButton"] button,
+    div[data-testid="stDownloadButton"] button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border: 1px solid #000000 !important;
+        box-sizing: border-box;
     }
 
     /* Info boxes */
@@ -121,14 +127,6 @@ st.markdown("""
     /* Multiselect */
     div[data-baseweb="select"] > div {
         border-radius: 6px;
-    }
-
-    /* Download button */
-    .stDownloadButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 6px;
-        font-weight: 500;
     }
 
     /* Success message */
@@ -204,11 +202,11 @@ if uploaded_file is not None:
 
 # Skip rows parameter
 skip_rows = st.sidebar.number_input(
-    "Rows to skip (metadata):",
+    "Number of Header Lines",
     min_value=0,
     max_value=10,
     value=3,
-    help="Number of metadata rows to skip (3 for Datamine format)"
+    help="Number of Header Lines"
 )
 
 # ============================================================================
@@ -386,7 +384,7 @@ if csv_file is not None:
         col_sum1, col_sum2, col_sum3, col_sum4 = st.columns([1, 1, 1, 1])
 
         with col_sum1:
-            if st.button("📊 Apply Process Block", type="secondary", use_container_width=True):
+            if st.button("📊 Calculate Block!", use_container_width=True):
                 if not st.session_state.is_summed:
                     # Save original if not already saved
                     st.session_state.original_df = viz.df.copy()
@@ -417,7 +415,7 @@ if csv_file is not None:
                     st.info("Already in summed mode. Click 'Reset' to restore original.")
 
         with col_sum2:
-            if st.button("🔄 Reset Original", type="secondary", use_container_width=True):
+            if st.button("🔄 Reset Original", use_container_width=True):
                 if st.session_state.is_summed:
                     viz.df = st.session_state.original_df.copy()
                     st.session_state.is_summed = False
@@ -636,7 +634,7 @@ else:
         <h3 style='color: #667eea; margin-top: 0;'>1️⃣ Upload & Setup</h3>
         <ul style='color: #4b5563;'>
             <li>Upload file CSV (Surpac/Datamine/format standar)</li>
-            <li>Atur "Rows to skip" untuk metadata (default: 3)</li>
+            <li>Atur "Number of Header Lines"</li>
             <li>Pilih <strong>Colorscale</strong> dan <strong>Color Mode</strong> (Auto/Gradient/Discrete)</li>
         </ul>
     </div>
@@ -672,7 +670,7 @@ else:
             <li>Pilih value attribute yang ingin dirata-rata (misalnya: grade, tonnage)</li>
             <li>Hasil: kolom baru <code>avg_{kategori}_{attribute}</code> untuk setiap kategori</li>
         </ul>
-        <p style='color: #059669; font-weight: 600; margin-top: 1rem;'>✓ Klik "Apply Process Block" → Reset/Export tersedia</p>
+        <p style='color: #059669; font-weight: 600; margin-top: 1rem;'>✓ Klik "Calculate Block!" → Reset/Export tersedia</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -704,6 +702,6 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("""
 <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem; border-radius: 8px; text-align: center;'>
     <p style='color: white; font-weight: 700; font-size: 1.1rem; margin: 0;'>Block Model Visualizer</p>
-    <p style='color: #e0e7ff; font-size: 0.9rem; margin: 0.5rem 0 0 0;'>v2.1</p>
+    <p style='color: #e0e7ff; font-size: 0.9rem; margin: 0.5rem 0 0 0;'>v1.0</p>
 </div>
 """, unsafe_allow_html=True)
