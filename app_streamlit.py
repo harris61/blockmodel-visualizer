@@ -13,6 +13,7 @@ Usage:
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
@@ -163,12 +164,89 @@ st.markdown("""
     button[data-testid="manage-app-button"] {display: none;}
     div.stActionButton {display: none;}
 
-    /* Hide sidebar collapse button */
+    /* Force sidebar always visible with aggressive CSS */
+    section[data-testid="stSidebar"] {
+        display: block !important;
+        visibility: visible !important;
+        transform: none !important;
+        transition: none !important;
+        min-width: 244px !important;
+        max-width: 550px !important;
+    }
+
+    /* Ensure sidebar is not collapsed */
+    section[data-testid="stSidebar"][aria-expanded="false"] {
+        display: block !important;
+        transform: translateX(0) !important;
+    }
+
+    /* Hide all collapse-related controls */
     button[kind="headerNoPadding"] {display: none !important;}
-    section[data-testid="stSidebar"] > div > button {display: none !important;}
     [data-testid="collapsedControl"] {display: none !important;}
+    button[aria-label*="ollapse"] {display: none !important;}
+    button[aria-label*="Close"] {display: none !important;}
 </style>
 """, unsafe_allow_html=True)
+
+# Force sidebar visibility with JavaScript component
+components.html(
+    """
+    <script>
+    (function() {
+        // Clear all sidebar-related storage
+        function clearSidebarStorage() {
+            try {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('sidebar') || key.includes('Sidebar') || key.includes('st-'))) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    if (key && (key.includes('sidebar') || key.includes('Sidebar') || key.includes('st-'))) {
+                        sessionStorage.removeItem(key);
+                    }
+                }
+            } catch(e) {}
+        }
+
+        clearSidebarStorage();
+
+        // Force sidebar visible
+        function forceShow() {
+            const frames = window.parent.document.querySelectorAll('iframe');
+            frames.forEach(frame => {
+                try {
+                    const doc = frame.contentDocument || frame.contentWindow.document;
+                    clearSidebarStorage();
+                } catch(e) {}
+            });
+
+            const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+            if (sidebar) {
+                sidebar.style.cssText = 'display: block !important; visibility: visible !important; transform: translateX(0) !important; min-width: 244px !important;';
+                sidebar.removeAttribute('aria-expanded');
+            }
+        }
+
+        // Run immediately and repeatedly
+        forceShow();
+        setTimeout(forceShow, 100);
+        setTimeout(forceShow, 300);
+        setTimeout(forceShow, 600);
+        setTimeout(forceShow, 1000);
+
+        // Observe changes
+        const obs = new MutationObserver(forceShow);
+        setTimeout(() => {
+            obs.observe(window.parent.document.body, {subtree: true, attributes: true});
+        }, 500);
+    })();
+    </script>
+    """,
+    height=0,
+)
 
 # Title with modern styling
 st.markdown("""
