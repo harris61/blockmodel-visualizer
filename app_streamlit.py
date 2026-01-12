@@ -21,6 +21,8 @@ import os
 from PIL import Image
 import base64
 from io import BytesIO
+import hashlib
+import json
 
 from block_model_visualizer import BlockModelVisualizer
 from styles import get_custom_css
@@ -139,15 +141,65 @@ color_mode = st.sidebar.radio(
 color_mode_param = COLOR_MODE_MAPPING[color_mode]
 
 # ============================================================================
+# CACHED DATA LOADING FUNCTION
+# ============================================================================
+@st.cache_data(show_spinner=False)
+def load_blockmodel_data(csv_path: str, skip_rows: int):
+    """
+    Cached data loading function to prevent reloading data on every parameter change.
+    Cache is invalidated only when csv_path or skip_rows changes.
+    """
+    viz = BlockModelVisualizer(csv_path, skip_rows=skip_rows)
+    viz.load_data()
+    return viz
+
+@st.cache_data(show_spinner=False)
+def compute_block_sum(df_dict: dict, coord_cols: dict, config_hash: str, config: dict):
+    """
+    Cached block sum computation to prevent recalculation on every parameter change.
+    Cache is invalidated only when the configuration changes.
+
+    Args:
+        df_dict: Dictionary representation of the dataframe
+        coord_cols: Coordinate column mapping
+        config_hash: Hash of configuration to use as cache key
+        config: Configuration dictionary
+
+    Returns:
+        DataFrame: Processed dataframe
+    """
+    # Reconstruct dataframe and visualizer
+    temp_df = pd.DataFrame(df_dict)
+    temp_viz = BlockModelVisualizer.__new__(BlockModelVisualizer)
+    temp_viz.df = temp_df
+    temp_viz.coord_cols = coord_cols
+
+    # Apply vertical sum
+    apply_vertical_sum(temp_viz, config)
+
+    return temp_viz.df
+
+# ============================================================================
 # MAIN AREA - DATA LOADING AND VISUALIZATION
 # ============================================================================
 
 if csv_file is not None:
     try:
-        # Load data
-        with st.spinner("Loading data..."):
-            viz = BlockModelVisualizer(csv_file, skip_rows=skip_rows)
-            viz.load_data()
+        # ====================================================================
+        # STAGE 1: Load data (cached)
+        # ====================================================================
+        with st.spinner("⏳ Stage 1/3: Loading data from CSV..."):
+            viz = load_blockmodel_data(csv_file, skip_rows)
+
+        # Show cache status with better messaging
+        cache_key = f"{csv_file}_{skip_rows}"
+        is_cached = st.session_state.get(f'loaded_{cache_key}', False)
+
+        if is_cached:
+            st.sidebar.success("✓ Data loaded (using cache - instant!)")
+        else:
+            st.sidebar.success("✓ Data loaded successfully")
+            st.session_state[f'loaded_{cache_key}'] = True
 
         # ====================================================================
         # BLOCK SUM FEATURE
@@ -158,9 +210,30 @@ if csv_file is not None:
         # Render block sum configuration UI
         config = render_block_sum_config(viz)
 
-        # Apply sum if in summed mode (after rerun)
+        # ====================================================================
+        # STAGE 2: Apply block sum if enabled (cached)
+        # ====================================================================
         if st.session_state.is_summed:
-            apply_vertical_sum(viz, st.session_state.block_sum_config)
+            # Create a hash of the config to use as cache key
+            config_str = json.dumps(st.session_state.block_sum_config, sort_keys=True, default=str)
+            config_hash = hashlib.md5(config_str.encode()).hexdigest()
+
+            # Check if this config was already computed
+            cache_hit = st.session_state.get(f'block_sum_{config_hash}', False)
+
+            # Convert original df to dict for caching
+            df_dict = st.session_state.original_df.to_dict('list')
+
+            # Use cached computation
+            with st.spinner("⏳ Stage 2/3: Processing block calculations..."):
+                viz.df = compute_block_sum(df_dict, viz.coord_cols, config_hash, st.session_state.block_sum_config)
+
+            # Show cache status for block sum
+            if cache_hit:
+                st.sidebar.info("✓ Block calculations (using cache)")
+            else:
+                st.sidebar.info("✓ Block calculations completed")
+                st.session_state[f'block_sum_{config_hash}'] = True
 
         # Render control buttons and handle actions
         action = render_block_sum_controls(viz)
@@ -225,7 +298,7 @@ if csv_file is not None:
         selected_attrs = [color_attr] if color_attr else []
 
         # ====================================================================
-        # FILTERING
+        # FILTERING (DEBOUNCED with Apply Button)
         # ====================================================================
         with st.expander("🔍 Data Filtering (Optional)"):
             st.write("Filter blocks by attribute values:")
@@ -245,37 +318,67 @@ if csv_file is not None:
                     horizontal=True
                 )
 
-                attr_min = float(viz.df[filter_attr].min())
-                attr_max = float(viz.df[filter_attr].max())
+                # Get data for sliders (use original_df if available to get full range)
+                source_df = st.session_state.get('original_df', viz.df)
+                attr_min = float(source_df[filter_attr].min())
+                attr_max = float(source_df[filter_attr].max())
 
+                # Initialize session state for filter values
+                if 'filter_dict' not in st.session_state:
+                    st.session_state.filter_dict = None
+                if 'filter_applied' not in st.session_state:
+                    st.session_state.filter_applied = False
+
+                # Store slider values in temporary variables (doesn't trigger filter yet)
                 if filter_type == "Range":
                     filter_range = st.slider(
                         f"{filter_attr} range:",
                         min_value=attr_min,
                         max_value=attr_max,
-                        value=(attr_min, attr_max)
+                        value=(attr_min, attr_max),
+                        key="filter_range_slider"
                     )
-                    filter_dict = {filter_attr: filter_range}
+                    temp_filter_dict = {filter_attr: filter_range}
                 elif filter_type == "Minimum value":
                     filter_min = st.slider(
                         f"Minimum {filter_attr}:",
                         min_value=attr_min,
                         max_value=attr_max,
-                        value=attr_min
+                        value=attr_min,
+                        key="filter_min_slider"
                     )
-                    filter_dict = {filter_attr: (filter_min, None)}
+                    temp_filter_dict = {filter_attr: (filter_min, None)}
                 else:
                     filter_max = st.slider(
                         f"Maximum {filter_attr}:",
                         min_value=attr_min,
                         max_value=attr_max,
-                        value=attr_max
+                        value=attr_max,
+                        key="filter_max_slider"
                     )
-                    filter_dict = {filter_attr: (None, filter_max)}
+                    temp_filter_dict = {filter_attr: (None, filter_max)}
 
-                # Apply filter
-                viz.filter_data(filter_dict)
-                st.info(f"Filtered to {len(viz.df):,} blocks")
+                # Add Apply and Clear buttons
+                col_filter1, col_filter2 = st.columns(2)
+
+                with col_filter1:
+                    if st.button("🔍 Apply Filter", use_container_width=True):
+                        st.session_state.filter_dict = temp_filter_dict
+                        st.session_state.filter_applied = True
+
+                with col_filter2:
+                    if st.button("🔄 Clear Filter", use_container_width=True):
+                        st.session_state.filter_dict = None
+                        st.session_state.filter_applied = False
+
+                # Apply filter if button was clicked
+                if st.session_state.filter_applied and st.session_state.filter_dict:
+                    viz.filter_data(st.session_state.filter_dict)
+                    st.info(f"Filtered to {len(viz.df):,} blocks")
+            else:
+                # Clear filter state when filtering is disabled
+                st.session_state.filter_dict = None
+                st.session_state.filter_applied = False
 
         # ====================================================================
         # AUTO-GENERATE VISUALIZATION
@@ -286,8 +389,10 @@ if csv_file is not None:
         if len(selected_attrs) == 0 or color_attr is None:
             st.info("👆 Please select an attribute from the dropdown above to visualize")
         else:
-            # Auto-generate visualization
-            with st.spinner("🔄 Creating visualization..."):
+            # ================================================================
+            # STAGE 3: Generate visualization
+            # ================================================================
+            with st.spinner(f"⏳ Stage 3/3: Creating 3D visualization for {len(viz.df):,} blocks..."):
                 # Create point cloud visualization
                 fig = viz.visualize_scatter(
                     color_by=color_attr,
@@ -297,8 +402,11 @@ if csv_file is not None:
                     title=f"Block Model - {color_attr} ({len(viz.df):,} blocks)"
                 )
 
-                # Display
-                st.plotly_chart(fig, use_container_width=True)
+            # Show completion status
+            st.sidebar.success(f"✓ Visualization ready! ({len(viz.df):,} blocks)")
+
+            # Display
+            st.plotly_chart(fig, use_container_width=True)
 
             # 3D Controls info
             st.markdown(get_3d_controls_html(), unsafe_allow_html=True)

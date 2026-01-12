@@ -1078,22 +1078,24 @@ class BlockModelVisualizer:
         z = self.df[self.coord_cols['z']]
         color_values = self.df[color_by]
 
-        # Create hover text with multiple attributes
+        # Create hover text with multiple attributes - OPTIMIZED with vectorized operations
         hover_cols = ['zone', 'ni', 'co', 'fe', 'products', 'block_value']
-        hover_text = []
 
-        for idx, row in self.df.iterrows():
-            text_parts = [f"<b>Block Info</b><br>"]
-            text_parts.append(f"X: {row[self.coord_cols['x']]:.2f}<br>")
-            text_parts.append(f"Y: {row[self.coord_cols['y']]:.2f}<br>")
-            text_parts.append(f"Z: {row[self.coord_cols['z']]:.2f}<br>")
-            text_parts.append(f"<b>{color_by}: {row[color_by]}</b><br>")
+        # Build hover text using vectorized string operations (much faster than iterrows)
+        hover_parts = []
+        hover_parts.append(["<b>Block Info</b><br>"] * len(self.df))
+        hover_parts.append(self.df[self.coord_cols['x']].apply(lambda v: f"X: {v:.2f}<br>"))
+        hover_parts.append(self.df[self.coord_cols['y']].apply(lambda v: f"Y: {v:.2f}<br>"))
+        hover_parts.append(self.df[self.coord_cols['z']].apply(lambda v: f"Z: {v:.2f}<br>"))
+        hover_parts.append(self.df[color_by].apply(lambda v: f"<b>{color_by}: {v}</b><br>"))
 
-            for col in hover_cols:
-                if col in self.df.columns and col != color_by:
-                    text_parts.append(f"{col}: {row[col]}<br>")
+        # Add additional hover columns that exist in dataframe
+        for col in hover_cols:
+            if col in self.df.columns and col != color_by:
+                hover_parts.append(self.df[col].apply(lambda v: f"{col}: {v}<br>"))
 
-            hover_text.append("".join(text_parts))
+        # Combine all parts using vectorized concatenation
+        hover_text = pd.concat(hover_parts, axis=1).apply(lambda row: ''.join(row), axis=1).tolist()
 
         # Determine if color_by is numeric or categorical
         is_numeric = pd.api.types.is_numeric_dtype(self.df[color_by])
