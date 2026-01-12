@@ -724,7 +724,7 @@ with col_center:
 st.sidebar.markdown("""
 <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0rem 1rem 1rem 1rem; border-radius: 0px 0px 8px 8px; text-align: center; margin-top: -1rem;'>
     <p style='color: #e0e7ff; font-size: 0.75rem; margin: 0;'>
-        <a href='https://www.linkedin.com/company/soft-roc' target='_blank' style='color: #e0e7ff; text-decoration: underline;'>Click here to visit SOft.Roc</a>
+        <a href='https://www.linkedin.com/company/soft-roc' target='_blank' style='color: #e0e7ff; text-decoration: underline;'>Click here to visit Soft.Roc</a>
     </p>
 </div>
 """, unsafe_allow_html=True)
