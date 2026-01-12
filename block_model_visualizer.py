@@ -624,26 +624,15 @@ class BlockModelVisualizer:
             # String/object type = categorical
             return 'categorical'
 
-    def create_box_visualization(self, attributes=['ni', 'co', 'fe'],
-                                  colorscale='Viridis', opacity=0.9,
-                                  title=None, max_blocks=None,
-                                  color_mode='auto'):
+    def _prepare_visualization_data(self, max_blocks):
         """
-        Create 3D box visualization with interactive attribute menu
+        Prepare dataframe for visualization and handle performance warnings
 
         Args:
-            attributes (list): List of attribute names to include in dropdown
-            colorscale (str): Colorscale name (for gradient mode)
-            opacity (float): Box opacity
-            title (str): Plot title
-            max_blocks (int): Optional limit for performance (None = all blocks)
-            color_mode (str): 'auto', 'gradient', or 'discrete'
-                - auto: Auto-detect based on data type
-                - gradient: Force gradient colorscale (for numeric ranges)
-                - discrete: Force discrete colorscale (for categories)
+            max_blocks: Optional limit for performance
 
         Returns:
-            plotly.graph_objects.Figure
+            pd.DataFrame: Prepared dataframe for visualization
         """
         # Use all blocks by default
         df_viz = self.df
@@ -659,173 +648,268 @@ class BlockModelVisualizer:
             print(f"Warning: Rendering {len(df_viz)} blocks may be slow")
             print(f"  Consider using sample_data() first or set max_blocks parameter")
 
+        return df_viz
+
+    def _get_valid_attributes(self, df_viz, attributes):
+        """
+        Get valid numeric attributes for visualization
+
+        Args:
+            df_viz: Dataframe to visualize
+            attributes: User-specified attributes
+
+        Returns:
+            list: Valid attribute names
+        """
         # Get numeric columns if attributes not specified
         if not attributes or len(attributes) == 0:
             numeric_cols = df_viz.select_dtypes(include=[np.number]).columns.tolist()
             exclude = ['ijk', 'index', 'morig', 'nx', 'ny', 'nz', 'centroid_x', 'centroid_y', 'centroid_z']
             attributes = [col for col in numeric_cols if not any(ex in col.lower() for ex in exclude)][:10]
 
-        print(f"Creating box visualization for {len(df_viz)} blocks...")
-        print(f"Attributes available: {attributes}")
+        return attributes
 
-        # Create traces for each attribute
-        traces = []
+    def _prepare_color_mapping(self, attr, df_viz, color_mode, colorscale):
+        """
+        Prepare color mapping for a single attribute
 
-        for attr_idx, attr in enumerate(attributes):
-            if attr not in df_viz.columns:
-                print(f"Warning: Attribute '{attr}' not found, skipping")
-                continue
+        Args:
+            attr: Attribute name
+            df_viz: Dataframe
+            color_mode: 'auto', 'gradient', or 'discrete'
+            colorscale: Colorscale name
 
-            # Detect attribute type
-            if color_mode == 'auto':
-                attr_type = self._detect_attribute_type(attr, df_viz)
-            elif color_mode == 'gradient':
-                attr_type = 'numeric'
-            else:  # discrete
-                attr_type = 'categorical'
+        Returns:
+            dict: Color mapping configuration with keys:
+                - attr_type: 'numeric' or 'categorical'
+                - plotly_colorscale: Colorscale for plotly
+                - vmin, vmax: Value range
+                - category_to_idx: Category mapping (if categorical)
+                - unique_vals: Unique categories (if categorical)
+        """
+        # Detect attribute type
+        if color_mode == 'auto':
+            attr_type = self._detect_attribute_type(attr, df_viz)
+        elif color_mode == 'gradient':
+            attr_type = 'numeric'
+        else:  # discrete
+            attr_type = 'categorical'
 
-            print(f"  - {attr}: {attr_type} ({'gradient' if attr_type == 'numeric' else 'discrete'} colorscale)")
+        print(f"  - {attr}: {attr_type} ({'gradient' if attr_type == 'numeric' else 'discrete'} colorscale)")
 
-            # Prepare color mapping based on type
-            if attr_type == 'categorical':
-                # Get unique categories
-                unique_vals = sorted(df_viz[attr].dropna().unique())
-                category_colors = self._get_discrete_colorscale(unique_vals)
+        # Prepare color mapping based on type
+        if attr_type == 'categorical':
+            # Get unique categories
+            unique_vals = sorted(df_viz[attr].dropna().unique())
+            category_colors = self._get_discrete_colorscale(unique_vals)
 
-                # Convert categories to numeric indices for colorscale
-                category_to_idx = {cat: idx for idx, cat in enumerate(unique_vals)}
+            # Convert categories to numeric indices for colorscale
+            category_to_idx = {cat: idx for idx, cat in enumerate(unique_vals)}
 
-                # Create custom discrete colorscale for plotly
-                # Format: [[0, color1], [0.33, color1], [0.33, color2], [0.66, color2], ...]
-                n_cats = len(unique_vals)
-                plotly_colorscale = []
-                for i, cat in enumerate(unique_vals):
-                    pos_start = i / n_cats
-                    pos_end = (i + 1) / n_cats
-                    color = category_colors[cat]
-                    plotly_colorscale.append([pos_start, color])
-                    plotly_colorscale.append([pos_end, color])
+            # Create custom discrete colorscale for plotly
+            # Format: [[0, color1], [0.33, color1], [0.33, color2], [0.66, color2], ...]
+            n_cats = len(unique_vals)
+            plotly_colorscale = []
+            for i, cat in enumerate(unique_vals):
+                pos_start = i / n_cats
+                pos_end = (i + 1) / n_cats
+                color = category_colors[cat]
+                plotly_colorscale.append([pos_start, color])
+                plotly_colorscale.append([pos_end, color])
 
-                vmin = 0
-                vmax = n_cats - 1
+            vmin = 0
+            vmax = n_cats - 1
+
+            return {
+                'attr_type': attr_type,
+                'plotly_colorscale': plotly_colorscale,
+                'vmin': vmin,
+                'vmax': vmax,
+                'category_to_idx': category_to_idx,
+                'unique_vals': unique_vals
+            }
+        else:
+            # Numeric: use gradient colorscale
+            color_values = df_viz[attr].values
+            vmin = np.nanmin(color_values)
+            vmax = np.nanmax(color_values)
+
+            return {
+                'attr_type': attr_type,
+                'plotly_colorscale': colorscale,
+                'vmin': vmin,
+                'vmax': vmax,
+                'category_to_idx': None,
+                'unique_vals': None
+            }
+
+    def _build_mesh_data_for_attribute(self, attr, df_viz, color_config):
+        """
+        Build mesh data (vertices, faces, colors) for a single attribute
+
+        Args:
+            attr: Attribute name
+            df_viz: Dataframe to visualize
+            color_config: Color configuration dict from _prepare_color_mapping()
+
+        Returns:
+            dict: Mesh data with keys:
+                - all_x, all_y, all_z: Vertex coordinates
+                - all_i, all_j, all_k: Face indices
+                - all_colors: Color values
+        """
+        # Collect all vertices and faces
+        all_x, all_y, all_z = [], [], []
+        all_i, all_j, all_k = [], [], []
+        all_colors = []
+
+        vertex_offset = 0
+
+        attr_type = color_config['attr_type']
+        category_to_idx = color_config['category_to_idx']
+        plotly_colorscale = color_config['plotly_colorscale']
+        vmin = color_config['vmin']
+        vmax = color_config['vmax']
+
+        for idx, row in df_viz.iterrows():
+            x = row[self.coord_cols['x']]
+            y = row[self.coord_cols['y']]
+            z = row[self.coord_cols['z']]
+
+            # Get dimensions
+            if self.dim_cols:
+                dx = row.get(self.dim_cols.get('dx', 'dim_x'), 12.5)
+                dy = row.get(self.dim_cols.get('dy', 'dim_y'), 12.5)
+                dz = row.get(self.dim_cols.get('dz', 'dim_z'), 1.0)
             else:
-                # Numeric: use gradient colorscale
-                color_values = df_viz[attr].values
-                vmin = np.nanmin(color_values)
-                vmax = np.nanmax(color_values)
-                plotly_colorscale = colorscale
-                category_to_idx = None
+                dx, dy, dz = 12.5, 12.5, 1.0
 
-            # Collect all vertices and faces
-            all_x, all_y, all_z = [], [], []
-            all_i, all_j, all_k = [], [], []
-            all_colors = []
-            all_hover_texts = []
+            raw_val = row[attr]
 
-            vertex_offset = 0
-
-            for idx, row in df_viz.iterrows():
-                x = row[self.coord_cols['x']]
-                y = row[self.coord_cols['y']]
-                z = row[self.coord_cols['z']]
-
-                # Get dimensions
-                if self.dim_cols:
-                    dx = row.get(self.dim_cols.get('dx', 'dim_x'), 12.5)
-                    dy = row.get(self.dim_cols.get('dy', 'dim_y'), 12.5)
-                    dz = row.get(self.dim_cols.get('dz', 'dim_z'), 1.0)
-                else:
-                    dx, dy, dz = 12.5, 12.5, 1.0
-
-                raw_val = row[attr]
-
-                # Convert to color value
-                if attr_type == 'categorical':
-                    color_val = category_to_idx.get(raw_val, 0)
-                    hover_text = f'{attr}: {raw_val}'
-                else:
-                    color_val = raw_val
-                    hover_text = f'{attr}: {raw_val:.3f}'
-
-                # Create box vertices and faces
-                vertices, faces = self._create_box_mesh(x, y, z, dx, dy, dz,
-                                                        color_val, plotly_colorscale, vmin, vmax)
-
-                # Add vertices
-                all_x.extend(vertices[:, 0])
-                all_y.extend(vertices[:, 1])
-                all_z.extend(vertices[:, 2])
-
-                # Add faces with offset
-                for face in faces:
-                    all_i.append(face[0] + vertex_offset)
-                    all_j.append(face[1] + vertex_offset)
-                    all_k.append(face[2] + vertex_offset)
-                    all_colors.append(color_val)
-
-                vertex_offset += 8  # 8 vertices per box
-
-            # Create mesh3d trace
+            # Convert to color value
             if attr_type == 'categorical':
-                # Categorical: show discrete legend
-                trace = go.Mesh3d(
-                    x=all_x,
-                    y=all_y,
-                    z=all_z,
-                    i=all_i,
-                    j=all_j,
-                    k=all_k,
-                    intensity=all_colors,
-                    colorscale=plotly_colorscale,
-                    opacity=opacity,
-                    name=attr,
-                    colorbar=dict(
-                        title=attr,
-                        thickness=20,
-                        len=0.7,
-                        x=1.02,
-                        tickmode='array',
-                        tickvals=list(range(len(unique_vals))),
-                        ticktext=[str(v) for v in unique_vals]
-                    ),
-                    hovertemplate='<b>%{text}</b><br>' +
-                                  'X: %{x:.1f}<br>' +
-                                  'Y: %{y:.1f}<br>' +
-                                  'Z: %{z:.1f}<br>' +
-                                  '<extra></extra>',
-                    text=[f'{attr}: {unique_vals[int(c)]}' if c < len(unique_vals) else f'{attr}: N/A'
-                          for c in all_colors],
-                    visible=(attr_idx == 0)
-                )
+                color_val = category_to_idx.get(raw_val, 0)
             else:
-                # Numeric: show gradient colorbar
-                trace = go.Mesh3d(
-                    x=all_x,
-                    y=all_y,
-                    z=all_z,
-                    i=all_i,
-                    j=all_j,
-                    k=all_k,
-                    intensity=all_colors,
-                    colorscale=plotly_colorscale,
-                    opacity=opacity,
-                    name=attr,
-                    colorbar=dict(
-                        title=attr,
-                        thickness=20,
-                        len=0.7,
-                        x=1.02
-                    ),
-                    hovertemplate=f'<b>{attr}: %{{intensity:.3f}}</b><br>' +
-                                  'X: %{x:.1f}<br>' +
-                                  'Y: %{y:.1f}<br>' +
-                                  'Z: %{z:.1f}<br>' +
-                                  '<extra></extra>',
-                    visible=(attr_idx == 0)
-                )
+                color_val = raw_val
 
-            traces.append(trace)
+            # Create box vertices and faces
+            vertices, faces = self._create_box_mesh(x, y, z, dx, dy, dz,
+                                                    color_val, plotly_colorscale, vmin, vmax)
 
+            # Add vertices
+            all_x.extend(vertices[:, 0])
+            all_y.extend(vertices[:, 1])
+            all_z.extend(vertices[:, 2])
+
+            # Add faces with offset
+            for face in faces:
+                all_i.append(face[0] + vertex_offset)
+                all_j.append(face[1] + vertex_offset)
+                all_k.append(face[2] + vertex_offset)
+                all_colors.append(color_val)
+
+            vertex_offset += 8  # 8 vertices per box
+
+        return {
+            'all_x': all_x,
+            'all_y': all_y,
+            'all_z': all_z,
+            'all_i': all_i,
+            'all_j': all_j,
+            'all_k': all_k,
+            'all_colors': all_colors
+        }
+
+    def _create_mesh_trace(self, attr, mesh_data, color_config, opacity, is_visible):
+        """
+        Create a Mesh3d trace from mesh data
+
+        Args:
+            attr: Attribute name
+            mesh_data: Mesh data dict from _build_mesh_data_for_attribute()
+            color_config: Color configuration dict
+            opacity: Trace opacity
+            is_visible: Whether trace should be visible initially
+
+        Returns:
+            go.Mesh3d: Plotly trace
+        """
+        attr_type = color_config['attr_type']
+
+        if attr_type == 'categorical':
+            # Categorical: show discrete legend
+            unique_vals = color_config['unique_vals']
+            trace = go.Mesh3d(
+                x=mesh_data['all_x'],
+                y=mesh_data['all_y'],
+                z=mesh_data['all_z'],
+                i=mesh_data['all_i'],
+                j=mesh_data['all_j'],
+                k=mesh_data['all_k'],
+                intensity=mesh_data['all_colors'],
+                colorscale=color_config['plotly_colorscale'],
+                opacity=opacity,
+                name=attr,
+                colorbar=dict(
+                    title=attr,
+                    thickness=20,
+                    len=0.7,
+                    x=1.02,
+                    tickmode='array',
+                    tickvals=list(range(len(unique_vals))),
+                    ticktext=[str(v) for v in unique_vals]
+                ),
+                hovertemplate='<b>%{text}</b><br>' +
+                              'X: %{x:.1f}<br>' +
+                              'Y: %{y:.1f}<br>' +
+                              'Z: %{z:.1f}<br>' +
+                              '<extra></extra>',
+                text=[f'{attr}: {unique_vals[int(c)]}' if c < len(unique_vals) else f'{attr}: N/A'
+                      for c in mesh_data['all_colors']],
+                visible=is_visible
+            )
+        else:
+            # Numeric: show gradient colorbar
+            trace = go.Mesh3d(
+                x=mesh_data['all_x'],
+                y=mesh_data['all_y'],
+                z=mesh_data['all_z'],
+                i=mesh_data['all_i'],
+                j=mesh_data['all_j'],
+                k=mesh_data['all_k'],
+                intensity=mesh_data['all_colors'],
+                colorscale=color_config['plotly_colorscale'],
+                opacity=opacity,
+                name=attr,
+                colorbar=dict(
+                    title=attr,
+                    thickness=20,
+                    len=0.7,
+                    x=1.02
+                ),
+                hovertemplate=f'<b>{attr}: %{{intensity:.3f}}</b><br>' +
+                              'X: %{x:.1f}<br>' +
+                              'Y: %{y:.1f}<br>' +
+                              'Z: %{z:.1f}<br>' +
+                              '<extra></extra>',
+                visible=is_visible
+            )
+
+        return trace
+
+    def _create_figure_with_dropdown(self, traces, attributes, df_viz, title):
+        """
+        Create figure with dropdown menu and layout
+
+        Args:
+            traces: List of Mesh3d traces
+            attributes: List of attribute names
+            df_viz: Dataframe (for validation)
+            title: Plot title
+
+        Returns:
+            go.Figure: Complete figure with dropdown and layout
+        """
         # Create figure
         fig = go.Figure(data=traces)
 
@@ -902,6 +986,55 @@ class BlockModelVisualizer:
         )
 
         return fig
+
+    def create_box_visualization(self, attributes=['ni', 'co', 'fe'],
+                                  colorscale='Viridis', opacity=0.9,
+                                  title=None, max_blocks=None,
+                                  color_mode='auto'):
+        """
+        Create 3D box visualization with interactive attribute menu
+
+        Args:
+            attributes (list): List of attribute names to include in dropdown
+            colorscale (str): Colorscale name (for gradient mode)
+            opacity (float): Box opacity
+            title (str): Plot title
+            max_blocks (int): Optional limit for performance (None = all blocks)
+            color_mode (str): 'auto', 'gradient', or 'discrete'
+                - auto: Auto-detect based on data type
+                - gradient: Force gradient colorscale (for numeric ranges)
+                - discrete: Force discrete colorscale (for categories)
+
+        Returns:
+            plotly.graph_objects.Figure
+        """
+        # Prepare data and attributes
+        df_viz = self._prepare_visualization_data(max_blocks)
+        attributes = self._get_valid_attributes(df_viz, attributes)
+
+        print(f"Creating box visualization for {len(df_viz)} blocks...")
+        print(f"Attributes available: {attributes}")
+
+        # Create traces for each attribute
+        traces = []
+
+        for attr_idx, attr in enumerate(attributes):
+            if attr not in df_viz.columns:
+                print(f"Warning: Attribute '{attr}' not found, skipping")
+                continue
+
+            # Prepare color mapping
+            color_config = self._prepare_color_mapping(attr, df_viz, color_mode, colorscale)
+
+            # Build mesh data
+            mesh_data = self._build_mesh_data_for_attribute(attr, df_viz, color_config)
+
+            # Create trace
+            trace = self._create_mesh_trace(attr, mesh_data, color_config, opacity, is_visible=(attr_idx == 0))
+            traces.append(trace)
+
+        # Create and return figure with dropdown
+        return self._create_figure_with_dropdown(traces, attributes, df_viz, title)
 
     def visualize_scatter(self, color_by='ni', size_by=None, marker_size=3,
                          colorscale='Viridis', title=None, opacity=0.8,
