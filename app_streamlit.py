@@ -162,6 +162,11 @@ st.markdown("""
     /* Hide manage app button */
     button[data-testid="manage-app-button"] {display: none;}
     div.stActionButton {display: none;}
+
+    /* Hide sidebar collapse button - keep sidebar always visible */
+    section[data-testid="stSidebar"] button[kind="header"] {display: none !important;}
+    button[data-testid="collapsedControl"] {display: none !important;}
+    section[data-testid="stSidebar"] {display: block !important;}
 </style>
 """, unsafe_allow_html=True)
 
