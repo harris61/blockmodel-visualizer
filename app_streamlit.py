@@ -717,11 +717,11 @@ footer_html = f"""
     <p style='color: white; font-weight: 700; font-size: 1.1rem; margin: 0;'>Block Model Visualizer</p>
     <p style='color: #e0e7ff; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;'>v1.0</p>
     <div style='border-top: 1px solid rgba(255,255,255,0.3); padding-top: 1rem; padding-bottom: 1rem;'>
-        <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.3rem 0 0.2rem 0;'>Created by:</p>
+        <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.3rem 0 0.2rem 0;'>Created by</p>
         <a href='https://www.linkedin.com/in/harristio-adam/' target='_blank' style='color: white; text-decoration: none; font-weight: 600; font-size: 0.85rem;'>Harristio Adam</a>
-        <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.8rem 0 0.3rem 0;'>Powered by:</p>
+        <p style='color: #e0e7ff; font-size: 0.8rem; margin: 0.8rem 0 0.3rem 0;'>Powered by</p>
         <a href='https://www.linkedin.com/company/soft-roc' target='_blank'>
-            <img src='data:image/png;base64,{img_str}' style='max-width: 100px; height: auto;' alt='Soft.Roc'>
+            <img src='data:image/png;base64,{img_str}' style='max-width: 150px; height: auto;' alt='Soft.Roc'>
         </a>
     </div>
 </div>
