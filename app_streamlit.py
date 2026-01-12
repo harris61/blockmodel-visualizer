@@ -18,7 +18,6 @@ import plotly.graph_objects as go
 import numpy as np
 from pathlib import Path
 import os
-import base64
 
 from block_model_visualizer import BlockModelVisualizer
 
@@ -701,9 +700,10 @@ else:
 # Footer with modern styling
 st.sidebar.markdown("---")
 
-# Read and encode logo
+# Read and encode logo for embedding
 with open("2.png", "rb") as f:
-    logo_data = base64.b64encode(f.read()).decode()
+    import base64
+    logo_base64 = base64.b64encode(f.read()).decode()
 
 st.sidebar.markdown(f"""
 <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem; border-radius: 8px; text-align: center;'>
@@ -712,11 +712,11 @@ st.sidebar.markdown(f"""
 
     <div style='margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);'>
         <p style='color: #e0e7ff; font-size: 0.85rem; margin: 0.5rem 0;'>
-            Created by: <a href='https://www.linkedin.com/in/harristio-adam/' target='_blank' style='color: white; text-decoration: none; font-weight: 600;'>Harristio Adam</a>
+            Created by: <a href='https://www.linkedin.com/in/harristio-adam/' target='_blank' style='color: white; text-decoration: none; font-weight: 600; transition: opacity 0.2s;' onmouseover='this.style.opacity=0.8' onmouseout='this.style.opacity=1'>Harristio Adam</a>
         </p>
         <p style='color: #e0e7ff; font-size: 0.85rem; margin: 0.5rem 0 0.3rem 0;'>Powered by:</p>
-        <a href='https://www.linkedin.com/company/soft-roc' target='_blank'>
-            <img src='data:image/png;base64,{logo_data}' style='max-width: 120px; height: auto; margin: 0 auto; display: block;' alt='SOft.Roc'>
+        <a href='https://www.linkedin.com/company/soft-roc' target='_blank' style='display: inline-block; transition: transform 0.2s;' onmouseover='this.style.transform="scale(1.05)"' onmouseout='this.style.transform="scale(1)"'>
+            <img src='data:image/png;base64,{logo_base64}' style='max-width: 120px; height: auto; display: block;' alt='SOft.Roc'>
         </a>
     </div>
 </div>
