@@ -221,188 +221,129 @@ class BlockModelVisualizer:
         cat_cols = self.df.select_dtypes(include=['object']).columns.tolist()
         return cat_cols
 
-    def sum_vertical_blocks(self, categorical_attr=None, calc_mode='all',
-                            selected_categories=None, ob_categories=None, ore_categories=None,
-                            value_attr=None):
+    def _get_columns_to_sum(self):
         """
-        Sum blocks vertically (along Z-axis) for each X,Y coordinate
-
-        For each unique (X,Y) position:
-        - Sum all numeric attributes across all Z levels
-        - Place result at highest Z level
-        - Remove other blocks at that X,Y position
-
-        Enhanced modes:
-        - 'all': Sum all blocks (default, original behavior)
-        - 'thickness': Calculate thickness for selected categories
-        - 'stripping_ratio': Calculate OB/Ore thickness and SR
-        - 'block_sum': Sum value attribute for selected categories
-        - 'block_average': Average value attribute for selected categories
-
-        Args:
-            categorical_attr (str): Name of categorical attribute for classification
-            calc_mode (str): 'all', 'thickness', 'stripping_ratio', 'block_sum', or 'block_average'
-            selected_categories (list): Categories to calculate thickness/sum/average for
-            ob_categories (list): Categories considered as Overburden/Waste
-            ore_categories (list): Categories considered as Ore
-            value_attr (str): Name of numeric attribute to sum/average (for block_sum/block_average mode)
+        Get list of numeric columns that should be summed, excluding structural columns
 
         Returns:
-            self (for method chaining)
+            tuple: (sum_cols, categorical_cols, exclude_cols)
         """
-        if self.df is None or len(self.df) == 0:
-            print("Warning: No data to sum")
-            return self
-
-        print(f"\nSumming vertical blocks (collapsing Z-axis)...")
-        print(f"Calculation mode: {calc_mode}")
-        if calc_mode != 'all':
-            print(f"Categorical attribute: {categorical_attr}")
-            if calc_mode == 'thickness':
-                print(f"Selected categories: {selected_categories}")
-            elif calc_mode == 'stripping_ratio':
-                print(f"OB categories: {ob_categories}")
-                print(f"Ore categories: {ore_categories}")
-            elif calc_mode in ['block_sum', 'block_average']:
-                print(f"Selected categories: {selected_categories}")
-                print(f"Value attribute: {value_attr}")
-        print(f"Original blocks: {len(self.df):,}")
-
         x_col = self.coord_cols['x']
         y_col = self.coord_cols['y']
         z_col = self.coord_cols['z']
 
-        # Get numeric columns to sum (exclude coordinates and dimensions)
         numeric_cols = self.df.select_dtypes(include=[np.number]).columns.tolist()
 
         # Exclude structural/geometric attributes that should NOT be summed
         exclude_cols = [
-            x_col, y_col, z_col,  # Main coordinates
-            'ijk',                 # Block index
-            'xc', 'yc', 'zc',     # Coordinate fields
-            'xinc', 'yinc', 'zinc',  # Block increments/sizes
-            'xmorig', 'ymorig', 'zmorig',  # Grid origin
-            'nx', 'ny', 'nz',     # Grid dimensions
-            'fillvol',            # Fill volume
-            'volume',             # Total volume
-            'index', 'morig'      # Other indices
+            x_col, y_col, z_col, 'ijk', 'xc', 'yc', 'zc',
+            'xinc', 'yinc', 'zinc', 'xmorig', 'ymorig', 'zmorig',
+            'nx', 'ny', 'nz', 'fillvol', 'volume', 'index', 'morig'
         ]
 
-        # Also exclude dimension columns
         if self.dim_cols:
             exclude_cols.extend(self.dim_cols.values())
 
-        # Remove duplicates and filter only existing columns
         exclude_cols = list(set([col for col in exclude_cols if col in numeric_cols]))
         sum_cols = [col for col in numeric_cols if col not in exclude_cols]
-
-        # Get categorical/non-numeric columns
         categorical_cols = self.df.select_dtypes(include=['object']).columns.tolist()
 
-        print(f"Grouping by: ({x_col}, {y_col})")
-        print(f"Excluded (preserved) attributes: {sorted(exclude_cols)}")
-        print(f"Summing attributes: {sorted(sum_cols)}")
+        return sum_cols, categorical_cols, exclude_cols
 
-        # Group by X,Y and aggregate
-        grouped = self.df.groupby([x_col, y_col])
+    def _calculate_thickness_for_group(self, group, categorical_attr, selected_categories, dz_col, max_z_row):
+        """Calculate thickness for selected categories within a group"""
+        for category in selected_categories:
+            category_blocks = group[group[categorical_attr] == category]
+            if dz_col and dz_col in group.columns:
+                thickness = category_blocks[dz_col].sum()
+            else:
+                thickness = len(category_blocks)
 
-        summed_blocks = []
+            col_name = f'thickness_{category}'.lower()
+            max_z_row[col_name] = thickness
 
-        # Get block height (dz) if available
-        dz_col = self.dim_cols.get('dz') if self.dim_cols else None
+    def _calculate_stripping_ratio_for_group(self, group, categorical_attr, ob_categories, ore_categories, dz_col, max_z_row):
+        """Calculate stripping ratio for a group"""
+        # Calculate OB thickness
+        ob_blocks = group[group[categorical_attr].isin(ob_categories)]
+        if dz_col and dz_col in group.columns:
+            thickness_ob = ob_blocks[dz_col].sum()
+        else:
+            thickness_ob = len(ob_blocks)
 
-        for (x, y), group in grouped:
-            # Get highest Z level for this X,Y position
-            max_z_idx = group[z_col].idxmax()
-            max_z_row = group.loc[max_z_idx].copy()
+        # Calculate Ore thickness
+        ore_blocks = group[group[categorical_attr].isin(ore_categories)]
+        if dz_col and dz_col in group.columns:
+            thickness_ore = ore_blocks[dz_col].sum()
+        else:
+            thickness_ore = len(ore_blocks)
 
-            # Sum numeric attributes
-            for col in sum_cols:
-                if col in group.columns:
-                    max_z_row[col] = group[col].sum()
+        # Calculate Stripping Ratio
+        sr = thickness_ob / thickness_ore if thickness_ore > 0 else np.nan
 
-            # For categorical columns, take the most frequent value
-            for col in categorical_cols:
-                if col in group.columns:
-                    max_z_row[col] = group[col].mode()[0] if len(group[col].mode()) > 0 else group[col].iloc[0]
+        max_z_row['thickness_ob'] = thickness_ob
+        max_z_row['thickness_ore'] = thickness_ore
+        max_z_row['stripping_ratio'] = sr
 
-            # === ENHANCED CALCULATIONS ===
-            if calc_mode == 'thickness' and categorical_attr and selected_categories:
-                # Calculate thickness for each selected category
-                for category in selected_categories:
-                    category_blocks = group[group[categorical_attr] == category]
-                    if dz_col and dz_col in group.columns:
-                        thickness = category_blocks[dz_col].sum()
-                    else:
-                        # Fallback: count blocks (assume uniform height)
-                        thickness = len(category_blocks)
+    def _calculate_block_sum_for_group(self, group, categorical_attr, selected_categories, value_attr, max_z_row):
+        """Calculate block sum for selected categories"""
+        for category in selected_categories:
+            category_blocks = group[group[categorical_attr] == category]
+            sum_value = category_blocks[value_attr].sum() if value_attr in group.columns else 0
+            col_name = f'sum_{category}_{value_attr}'.lower()
+            max_z_row[col_name] = sum_value
 
-                    col_name = f'thickness_{category}'.lower()
-                    max_z_row[col_name] = thickness
+    def _calculate_block_average_for_group(self, group, categorical_attr, selected_categories, value_attr, max_z_row):
+        """Calculate block average for selected categories"""
+        for category in selected_categories:
+            category_blocks = group[group[categorical_attr] == category]
+            if value_attr in group.columns and len(category_blocks) > 0:
+                avg_value = category_blocks[value_attr].mean()
+            else:
+                avg_value = np.nan
+            col_name = f'avg_{category}_{value_attr}'.lower()
+            max_z_row[col_name] = avg_value
 
-            elif calc_mode == 'stripping_ratio' and categorical_attr and ob_categories and ore_categories:
-                # Calculate OB thickness
-                ob_blocks = group[group[categorical_attr].isin(ob_categories)]
-                if dz_col and dz_col in group.columns:
-                    thickness_ob = ob_blocks[dz_col].sum()
-                else:
-                    thickness_ob = len(ob_blocks)
+    def _aggregate_block_group(self, group, z_col, sum_cols, categorical_cols,
+                               calc_mode, categorical_attr, selected_categories,
+                               ob_categories, ore_categories, value_attr, dz_col):
+        """
+        Aggregate a single block group (all blocks at same X,Y position)
 
-                # Calculate Ore thickness
-                ore_blocks = group[group[categorical_attr].isin(ore_categories)]
-                if dz_col and dz_col in group.columns:
-                    thickness_ore = ore_blocks[dz_col].sum()
-                else:
-                    thickness_ore = len(ore_blocks)
+        Returns:
+            pd.Series: Aggregated row representing the summed block
+        """
+        # Get highest Z level for this X,Y position
+        max_z_idx = group[z_col].idxmax()
+        max_z_row = group.loc[max_z_idx].copy()
 
-                # Calculate Stripping Ratio
-                if thickness_ore > 0:
-                    sr = thickness_ob / thickness_ore
-                else:
-                    sr = np.nan  # or np.inf
+        # Sum numeric attributes
+        for col in sum_cols:
+            if col in group.columns:
+                max_z_row[col] = group[col].sum()
 
-                max_z_row['thickness_ob'] = thickness_ob
-                max_z_row['thickness_ore'] = thickness_ore
-                max_z_row['stripping_ratio'] = sr
+        # For categorical columns, take the most frequent value
+        for col in categorical_cols:
+            if col in group.columns:
+                max_z_row[col] = group[col].mode()[0] if len(group[col].mode()) > 0 else group[col].iloc[0]
 
-            elif calc_mode == 'block_sum' and categorical_attr and selected_categories and value_attr:
-                # Sum value attribute for selected categories
-                for category in selected_categories:
-                    category_blocks = group[group[categorical_attr] == category]
-                    if value_attr in group.columns:
-                        sum_value = category_blocks[value_attr].sum()
-                    else:
-                        sum_value = 0
+        # Apply enhanced calculations based on mode
+        if calc_mode == 'thickness' and categorical_attr and selected_categories:
+            self._calculate_thickness_for_group(group, categorical_attr, selected_categories, dz_col, max_z_row)
 
-                    col_name = f'sum_{category}_{value_attr}'.lower()
-                    max_z_row[col_name] = sum_value
+        elif calc_mode == 'stripping_ratio' and categorical_attr and ob_categories and ore_categories:
+            self._calculate_stripping_ratio_for_group(group, categorical_attr, ob_categories, ore_categories, dz_col, max_z_row)
 
-            elif calc_mode == 'block_average' and categorical_attr and selected_categories and value_attr:
-                # Average value attribute for selected categories
-                for category in selected_categories:
-                    category_blocks = group[group[categorical_attr] == category]
-                    if value_attr in group.columns and len(category_blocks) > 0:
-                        avg_value = category_blocks[value_attr].mean()
-                    else:
-                        avg_value = np.nan
+        elif calc_mode == 'block_sum' and categorical_attr and selected_categories and value_attr:
+            self._calculate_block_sum_for_group(group, categorical_attr, selected_categories, value_attr, max_z_row)
 
-                    col_name = f'avg_{category}_{value_attr}'.lower()
-                    max_z_row[col_name] = avg_value
+        elif calc_mode == 'block_average' and categorical_attr and selected_categories and value_attr:
+            self._calculate_block_average_for_group(group, categorical_attr, selected_categories, value_attr, max_z_row)
 
-            # Keep dimensions from the top block (maintain grid spacing for Vulcan compatibility)
-            # dim_z should remain as grid spacing (zinc) - do NOT sum it
-            # This ensures blocks can be placed in Vulcan's regular grid structure
+        return max_z_row
 
-            summed_blocks.append(max_z_row)
-
-        # Create new dataframe
-        self.df = pd.DataFrame(summed_blocks).reset_index(drop=True)
-
-        print(f"Summed blocks: {len(self.df):,}")
-        print(f"Reduction: {len(self.df.groupby([x_col, y_col]))} unique (X,Y) positions")
-        print(f"Each position now has 1 block at highest Z level")
-
-        # Print summary for thickness/SR/block_sum/block_average calculations
+    def _print_summary_statistics(self, calc_mode, selected_categories, value_attr):
+        """Print summary statistics based on calculation mode"""
         if calc_mode == 'thickness' and selected_categories:
             print("\n--- Thickness Calculation Summary ---")
             for category in selected_categories:
@@ -446,6 +387,79 @@ class BlockModelVisualizer:
                     max_val = self.df[col_name].max()
                     min_val = self.df[col_name].min()
                     print(f"{category}: Overall Average = {overall_avg:.2f}, Max = {max_val:.2f}, Min = {min_val:.2f}")
+
+    def sum_vertical_blocks(self, categorical_attr=None, calc_mode='all',
+                            selected_categories=None, ob_categories=None, ore_categories=None,
+                            value_attr=None):
+        """
+        Sum blocks vertically (along Z-axis) for each X,Y coordinate
+
+        Enhanced modes: 'all', 'thickness', 'stripping_ratio', 'block_sum', 'block_average'
+
+        Args:
+            categorical_attr: Name of categorical attribute for classification
+            calc_mode: Calculation mode
+            selected_categories: Categories to calculate thickness/sum/average for
+            ob_categories: Categories considered as Overburden/Waste
+            ore_categories: Categories considered as Ore
+            value_attr: Name of numeric attribute to sum/average
+
+        Returns:
+            self (for method chaining)
+        """
+        if self.df is None or len(self.df) == 0:
+            print("Warning: No data to sum")
+            return self
+
+        # Print calculation info
+        print(f"\nSumming vertical blocks (collapsing Z-axis)...")
+        print(f"Calculation mode: {calc_mode}")
+        if calc_mode != 'all':
+            print(f"Categorical attribute: {categorical_attr}")
+            if calc_mode == 'thickness':
+                print(f"Selected categories: {selected_categories}")
+            elif calc_mode == 'stripping_ratio':
+                print(f"OB categories: {ob_categories}")
+                print(f"Ore categories: {ore_categories}")
+            elif calc_mode in ['block_sum', 'block_average']:
+                print(f"Selected categories: {selected_categories}")
+                print(f"Value attribute: {value_attr}")
+        print(f"Original blocks: {len(self.df):,}")
+
+        # Get coordinate columns
+        x_col = self.coord_cols['x']
+        y_col = self.coord_cols['y']
+        z_col = self.coord_cols['z']
+        dz_col = self.dim_cols.get('dz') if self.dim_cols else None
+
+        # Get columns to sum
+        sum_cols, categorical_cols, exclude_cols = self._get_columns_to_sum()
+
+        print(f"Grouping by: ({x_col}, {y_col})")
+        print(f"Excluded (preserved) attributes: {sorted(exclude_cols)}")
+        print(f"Summing attributes: {sorted(sum_cols)}")
+
+        # Group by X,Y and aggregate
+        grouped = self.df.groupby([x_col, y_col])
+        summed_blocks = []
+
+        for (x, y), group in grouped:
+            aggregated_row = self._aggregate_block_group(
+                group, z_col, sum_cols, categorical_cols,
+                calc_mode, categorical_attr, selected_categories,
+                ob_categories, ore_categories, value_attr, dz_col
+            )
+            summed_blocks.append(aggregated_row)
+
+        # Create new dataframe
+        self.df = pd.DataFrame(summed_blocks).reset_index(drop=True)
+
+        print(f"Summed blocks: {len(self.df):,}")
+        print(f"Reduction: {len(self.df.groupby([x_col, y_col]))} unique (X,Y) positions")
+        print(f"Each position now has 1 block at highest Z level")
+
+        # Print summary statistics
+        self._print_summary_statistics(calc_mode, selected_categories, value_attr)
 
         return self
 
