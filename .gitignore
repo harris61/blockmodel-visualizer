@@ -30,6 +30,7 @@ wheels/
 temp_uploaded.csv
 *.tmp
 tmpclaude-*
+.claude/
 
 # IDE
 .vscode/
