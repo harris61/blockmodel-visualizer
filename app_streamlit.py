@@ -82,7 +82,7 @@ st.sidebar.markdown("#### 📁 File Upload")
 
 csv_file = None
 uploaded_file = st.sidebar.file_uploader(
-    "Upload your CSV file",
+    "Upload your Block Model .csv file",
     type=SUPPORTED_FILE_TYPES,
     help="Upload block model CSV file (Datamine, Vulcan, or standard format)"
 )

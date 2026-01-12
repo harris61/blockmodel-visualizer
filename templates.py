@@ -56,7 +56,7 @@ def get_important_notes_html() -> str:
             <li><strong>Hanya bisa mengolah Blok Model</strong>, tidak bisa mengolah Stratigraphic Model</li>
             <li><strong>Format file yang didukung:</strong> Blok Model hanya dalam format .csv, baik dalam format Surpac, Datamine, dll</li>
             <li><strong>Visualisasi menggunakan Point Cloud</strong> untuk alasan performa</li>
-            <li><strong>Calculate Thickness, Calculate Stripping Ratio, Block Sum, dan Block Average:</strong> attribute categorical yang bisa dibaca hanya yang bertipe data Text atau Categorical</li>
+            <li><strong>Tipe Data Attribute Klasifikasi Material:</strong> attribute untuk klasifikasi material hanya bisa membaca attribute dengan tipe data teks</li>
         </ol>
         <div style='background: #fef3c7; padding: 0.75rem; border-radius: 6px; margin-top: 1rem; border-left: 4px solid #f59e0b;'>
             <p style='color: #78350f; margin: 0;'><strong>💡 Tips:</strong> Buat attribute di dalam block model berupa klasifikasi material dengan tipe data teks terlebih dahulu</p>
