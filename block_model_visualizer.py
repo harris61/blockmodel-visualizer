@@ -17,6 +17,7 @@ import plotly.express as px
 import numpy as np
 from pathlib import Path
 import argparse
+from typing import Optional, Dict, List, Tuple, Union, Any
 
 
 class BlockModelVisualizer:
@@ -24,26 +25,26 @@ class BlockModelVisualizer:
     Unified block model visualizer with scatter and box visualization modes
     """
 
-    def __init__(self, csv_file, skip_rows=3):
+    def __init__(self, csv_file: Union[str, Path], skip_rows: int = 3) -> None:
         """
         Initialize the advanced visualizer
 
         Args:
-            csv_file (str): Path to the CSV file
-            skip_rows (int): Number of metadata rows to skip
+            csv_file: Path to the CSV file
+            skip_rows: Number of metadata rows to skip
         """
-        self.csv_file = Path(csv_file)
-        self.skip_rows = skip_rows
-        self.df = None
-        self.coord_cols = None
-        self.dim_cols = None
-        self.metadata_lines = []  # Store original metadata lines
+        self.csv_file: Path = Path(csv_file)
+        self.skip_rows: int = skip_rows
+        self.df: Optional[pd.DataFrame] = None
+        self.coord_cols: Optional[Dict[str, str]] = None
+        self.dim_cols: Optional[Dict[str, str]] = None
+        self.metadata_lines: List[str] = []  # Store original metadata lines
 
         if not self.csv_file.exists():
             raise FileNotFoundError(f"File not found: {csv_file}")
 
-    def load_data(self):
-        """Load CSV data"""
+    def load_data(self) -> 'BlockModelVisualizer':
+        """Load CSV data and return self for method chaining"""
         print(f"Loading data from {self.csv_file}...")
 
         if self.skip_rows > 0:
@@ -99,13 +100,13 @@ class BlockModelVisualizer:
         print(f"Coordinates: {self.coord_cols}")
         print(f"Dimensions: {self.dim_cols}")
 
-    def sample_data(self, n_samples=None, method='stratified_z'):
+    def sample_data(self, n_samples: Optional[int] = None, method: str = 'stratified_z') -> 'BlockModelVisualizer':
         """
         Sample data for performance
 
         Args:
-            n_samples (int): Number of samples
-            method (str): 'random', 'spatial', or 'stratified_z'
+            n_samples: Number of samples
+            method: 'random', 'spatial', or 'stratified_z'
                 - random: Pure random sampling (old method, may create Z gaps)
                 - spatial: Grid-based spatial sampling (better 3D continuity)
                 - stratified_z: Stratified by Z-level (ensures Z coverage)
@@ -178,7 +179,7 @@ class BlockModelVisualizer:
         print(f"Sampled to {len(self.df)} blocks")
         return self
 
-    def filter_data(self, filters=None):
+    def filter_data(self, filters: Optional[Dict[str, Union[Tuple[Optional[float], Optional[float]], float]]] = None) -> 'BlockModelVisualizer':
         """Filter data based on conditions"""
         if filters is None:
             return self
@@ -203,7 +204,7 @@ class BlockModelVisualizer:
         self.df = filtered_df
         return self
 
-    def get_numeric_columns(self):
+    def get_numeric_columns(self) -> List[str]:
         """
         Get list of numeric columns suitable for visualization (excludes structural columns)
         """
@@ -214,19 +215,19 @@ class BlockModelVisualizer:
                         if not any(keyword in col.lower() for keyword in exclude_keywords)]
         return filtered_cols
 
-    def get_categorical_columns(self):
+    def get_categorical_columns(self) -> List[str]:
         """
         Get list of categorical columns suitable for visualization
         """
         cat_cols = self.df.select_dtypes(include=['object']).columns.tolist()
         return cat_cols
 
-    def _get_columns_to_sum(self):
+    def _get_columns_to_sum(self) -> Tuple[List[str], List[str], List[str]]:
         """
         Get list of numeric columns that should be summed, excluding structural columns
 
         Returns:
-            tuple: (sum_cols, categorical_cols, exclude_cols)
+            Tuple of (sum_cols, categorical_cols, exclude_cols)
         """
         x_col = self.coord_cols['x']
         y_col = self.coord_cols['y']
@@ -388,9 +389,13 @@ class BlockModelVisualizer:
                     min_val = self.df[col_name].min()
                     print(f"{category}: Overall Average = {overall_avg:.2f}, Max = {max_val:.2f}, Min = {min_val:.2f}")
 
-    def sum_vertical_blocks(self, categorical_attr=None, calc_mode='all',
-                            selected_categories=None, ob_categories=None, ore_categories=None,
-                            value_attr=None):
+    def sum_vertical_blocks(self,
+                            categorical_attr: Optional[str] = None,
+                            calc_mode: str = 'all',
+                            selected_categories: Optional[List[str]] = None,
+                            ob_categories: Optional[List[str]] = None,
+                            ore_categories: Optional[List[str]] = None,
+                            value_attr: Optional[str] = None) -> 'BlockModelVisualizer':
         """
         Sum blocks vertically (along Z-axis) for each X,Y coordinate
 
@@ -463,7 +468,7 @@ class BlockModelVisualizer:
 
         return self
 
-    def export_to_csv_with_metadata(self):
+    def export_to_csv_with_metadata(self) -> str:
         """
         Export current dataframe to CSV with Datamine metadata format
 
@@ -624,7 +629,7 @@ class BlockModelVisualizer:
             # String/object type = categorical
             return 'categorical'
 
-    def _prepare_visualization_data(self, max_blocks):
+    def _prepare_visualization_data(self, max_blocks: Optional[int]) -> pd.DataFrame:
         """
         Prepare dataframe for visualization and handle performance warnings
 
@@ -632,7 +637,7 @@ class BlockModelVisualizer:
             max_blocks: Optional limit for performance
 
         Returns:
-            pd.DataFrame: Prepared dataframe for visualization
+            Prepared dataframe for visualization
         """
         # Use all blocks by default
         df_viz = self.df
@@ -650,7 +655,7 @@ class BlockModelVisualizer:
 
         return df_viz
 
-    def _get_valid_attributes(self, df_viz, attributes):
+    def _get_valid_attributes(self, df_viz: pd.DataFrame, attributes: List[str]) -> List[str]:
         """
         Get valid numeric attributes for visualization
 
@@ -659,7 +664,7 @@ class BlockModelVisualizer:
             attributes: User-specified attributes
 
         Returns:
-            list: Valid attribute names
+            Valid attribute names
         """
         # Get numeric columns if attributes not specified
         if not attributes or len(attributes) == 0:
@@ -669,7 +674,7 @@ class BlockModelVisualizer:
 
         return attributes
 
-    def _prepare_color_mapping(self, attr, df_viz, color_mode, colorscale):
+    def _prepare_color_mapping(self, attr: str, df_viz: pd.DataFrame, color_mode: str, colorscale: str) -> Dict[str, Any]:
         """
         Prepare color mapping for a single attribute
 
@@ -680,7 +685,7 @@ class BlockModelVisualizer:
             colorscale: Colorscale name
 
         Returns:
-            dict: Color mapping configuration with keys:
+            Color mapping configuration with keys:
                 - attr_type: 'numeric' or 'categorical'
                 - plotly_colorscale: Colorscale for plotly
                 - vmin, vmax: Value range
@@ -743,7 +748,7 @@ class BlockModelVisualizer:
                 'unique_vals': None
             }
 
-    def _build_mesh_data_for_attribute(self, attr, df_viz, color_config):
+    def _build_mesh_data_for_attribute(self, attr: str, df_viz: pd.DataFrame, color_config: Dict[str, Any]) -> Dict[str, List]:
         """
         Build mesh data (vertices, faces, colors) for a single attribute
 
@@ -753,7 +758,7 @@ class BlockModelVisualizer:
             color_config: Color configuration dict from _prepare_color_mapping()
 
         Returns:
-            dict: Mesh data with keys:
+            Mesh data with keys:
                 - all_x, all_y, all_z: Vertex coordinates
                 - all_i, all_j, all_k: Face indices
                 - all_colors: Color values
@@ -820,7 +825,7 @@ class BlockModelVisualizer:
             'all_colors': all_colors
         }
 
-    def _create_mesh_trace(self, attr, mesh_data, color_config, opacity, is_visible):
+    def _create_mesh_trace(self, attr: str, mesh_data: Dict[str, List], color_config: Dict[str, Any], opacity: float, is_visible: bool) -> go.Mesh3d:
         """
         Create a Mesh3d trace from mesh data
 
@@ -832,7 +837,7 @@ class BlockModelVisualizer:
             is_visible: Whether trace should be visible initially
 
         Returns:
-            go.Mesh3d: Plotly trace
+            Plotly Mesh3d trace
         """
         attr_type = color_config['attr_type']
 
@@ -897,7 +902,7 @@ class BlockModelVisualizer:
 
         return trace
 
-    def _create_figure_with_dropdown(self, traces, attributes, df_viz, title):
+    def _create_figure_with_dropdown(self, traces: List[go.Mesh3d], attributes: List[str], df_viz: pd.DataFrame, title: Optional[str]) -> go.Figure:
         """
         Create figure with dropdown menu and layout
 
@@ -908,7 +913,7 @@ class BlockModelVisualizer:
             title: Plot title
 
         Returns:
-            go.Figure: Complete figure with dropdown and layout
+            Complete figure with dropdown and layout
         """
         # Create figure
         fig = go.Figure(data=traces)
@@ -987,26 +992,29 @@ class BlockModelVisualizer:
 
         return fig
 
-    def create_box_visualization(self, attributes=['ni', 'co', 'fe'],
-                                  colorscale='Viridis', opacity=0.9,
-                                  title=None, max_blocks=None,
-                                  color_mode='auto'):
+    def create_box_visualization(self,
+                                  attributes: List[str] = ['ni', 'co', 'fe'],
+                                  colorscale: str = 'Viridis',
+                                  opacity: float = 0.9,
+                                  title: Optional[str] = None,
+                                  max_blocks: Optional[int] = None,
+                                  color_mode: str = 'auto') -> go.Figure:
         """
         Create 3D box visualization with interactive attribute menu
 
         Args:
-            attributes (list): List of attribute names to include in dropdown
-            colorscale (str): Colorscale name (for gradient mode)
-            opacity (float): Box opacity
-            title (str): Plot title
-            max_blocks (int): Optional limit for performance (None = all blocks)
-            color_mode (str): 'auto', 'gradient', or 'discrete'
+            attributes: List of attribute names to include in dropdown
+            colorscale: Colorscale name (for gradient mode)
+            opacity: Box opacity
+            title: Plot title
+            max_blocks: Optional limit for performance (None = all blocks)
+            color_mode: 'auto', 'gradient', or 'discrete'
                 - auto: Auto-detect based on data type
                 - gradient: Force gradient colorscale (for numeric ranges)
                 - discrete: Force discrete colorscale (for categories)
 
         Returns:
-            plotly.graph_objects.Figure
+            Plotly Figure object
         """
         # Prepare data and attributes
         df_viz = self._prepare_visualization_data(max_blocks)
@@ -1036,23 +1044,28 @@ class BlockModelVisualizer:
         # Create and return figure with dropdown
         return self._create_figure_with_dropdown(traces, attributes, df_viz, title)
 
-    def visualize_scatter(self, color_by='ni', size_by=None, marker_size=3,
-                         colorscale='Viridis', title=None, opacity=0.8,
-                         show_colorbar=True):
+    def visualize_scatter(self,
+                         color_by: str = 'ni',
+                         size_by: Optional[str] = None,
+                         marker_size: float = 3,
+                         colorscale: str = 'Viridis',
+                         title: Optional[str] = None,
+                         opacity: float = 0.8,
+                         show_colorbar: bool = True) -> go.Figure:
         """
         Create fast 3D point cloud visualization
 
         Args:
-            color_by (str): Column name to use for coloring
-            size_by (str): Column name to use for marker size (optional)
-            marker_size (float): Base marker size
-            colorscale (str): Plotly colorscale name
-            title (str): Plot title
-            opacity (float): Marker opacity (0-1)
-            show_colorbar (bool): Show colorbar
+            color_by: Column name to use for coloring
+            size_by: Column name to use for marker size (optional)
+            marker_size: Base marker size
+            colorscale: Plotly colorscale name
+            title: Plot title
+            opacity: Marker opacity (0-1)
+            show_colorbar: Show colorbar
 
         Returns:
-            plotly.graph_objects.Figure
+            Plotly Figure object
         """
         if color_by not in self.df.columns:
             print(f"Warning: Column '{color_by}' not found. Available columns:")
