@@ -44,11 +44,15 @@ from config import (
     AVAILABLE_COLORSCALES,
     COLOR_MODE_OPTIONS,
     COLOR_MODE_MAPPING,
-    CALC_MODE_OPTIONS,
-    CALC_MODE_MAPPING,
     EXCLUDE_ATTRIBUTE_KEYWORDS,
     SUPPORTED_FILE_TYPES,
     TEMP_UPLOAD_FILE
+)
+from ui_components import (
+    initialize_session_state,
+    render_block_sum_config,
+    render_block_sum_controls,
+    apply_vertical_sum
 )
 
 
@@ -148,182 +152,20 @@ if csv_file is not None:
         # ====================================================================
         # BLOCK SUM FEATURE
         # ====================================================================
-        # Initialize session state for original data
-        if 'original_df' not in st.session_state:
-            st.session_state.original_df = viz.df.copy()
-            st.session_state.is_summed = False
+        # Initialize session state
+        initialize_session_state(viz)
 
-        # Block Sum Configuration
-        st.markdown("## ⚙️ Block Sum Configuration")
-        st.markdown("---")
-
-        # Calculation Mode
-        calc_mode = st.radio(
-            "📊 Calculation Mode:",
-            CALC_MODE_OPTIONS,
-            horizontal=False,
-            help="Thickness: Calculate thickness by category | SR: OB/Ore ratio | Block Sum: Sum attribute values by category | Block Average: Average attribute values by category"
-        )
-
-        # Get categorical columns
-        cat_cols = viz.df.select_dtypes(include=['object']).columns.tolist()
-        # Get numeric columns for Block Sum/Average
-        numeric_cols = viz.df.select_dtypes(include=[np.number]).columns.tolist()
-
-        categorical_attr = None
-        selected_categories = None
-        ob_categories = None
-        ore_categories = None
-        value_attr = None
-
-        if calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio", "Calculate Block Sum", "Calculate Block Average"] and cat_cols:
-            # Select categorical attribute
-            categorical_attr = st.selectbox(
-                "Select Categorical Attribute:",
-                cat_cols,
-                help="Choose attribute for classification (e.g., lithology, zone, rock_type)"
-            )
-
-            if categorical_attr:
-                # Get unique categories
-                unique_cats = viz.df[categorical_attr].unique().tolist()
-
-                if calc_mode == "Calculate Thickness":
-                    selected_categories = st.multiselect(
-                        "Select Categories to Calculate Thickness:",
-                        unique_cats,
-                        default=unique_cats[:2] if len(unique_cats) >= 2 else unique_cats,
-                        help="Select one or more categories to calculate thickness"
-                    )
-
-                elif calc_mode == "Calculate Stripping Ratio":
-                    col1, col2 = st.columns(2)
-
-                    with col1:
-                        ob_categories = st.multiselect(
-                            "OB/Waste Categories:",
-                            unique_cats,
-                            help="Select categories considered as Overburden/Waste"
-                        )
-
-                    with col2:
-                        ore_categories = st.multiselect(
-                            "Ore Categories:",
-                            unique_cats,
-                            help="Select categories considered as Ore"
-                        )
-
-                elif calc_mode in ["Calculate Block Sum", "Calculate Block Average"]:
-                    # Select categories to filter
-                    selected_categories = st.multiselect(
-                        "Select Categories to Calculate:",
-                        unique_cats,
-                        default=unique_cats[:2] if len(unique_cats) >= 2 else unique_cats,
-                        help="Select one or more categories to include in calculation"
-                    )
-
-                    # Select numeric attribute to sum/average
-                    if numeric_cols:
-                        value_attr = st.selectbox(
-                            "Select Value Attribute:",
-                            numeric_cols,
-                            help=f"Choose numeric attribute to {'sum' if calc_mode == 'Calculate Block Sum' else 'average'}"
-                        )
-                    else:
-                        st.warning("⚠️ No numeric attributes found in dataset.")
-
-        elif calc_mode in ["Calculate Thickness", "Calculate Stripping Ratio", "Calculate Block Sum", "Calculate Block Average"] and not cat_cols:
-            st.warning("⚠️ No categorical attributes found in dataset.")
-
-        # Store configuration in session state
-        if 'block_sum_config' not in st.session_state:
-            st.session_state.block_sum_config = {}
-
-        st.session_state.block_sum_config = {
-            'calc_mode': calc_mode,
-            'categorical_attr': categorical_attr,
-            'selected_categories': selected_categories,
-            'ob_categories': ob_categories,
-            'ore_categories': ore_categories,
-            'value_attr': value_attr
-        }
+        # Render block sum configuration UI
+        config = render_block_sum_config(viz)
 
         # Apply sum if in summed mode (after rerun)
         if st.session_state.is_summed:
-            config = st.session_state.block_sum_config
-            viz.sum_vertical_blocks(
-                categorical_attr=config.get('categorical_attr'),
-                calc_mode=CALC_MODE_MAPPING[config.get('calc_mode', 'Calculate Thickness')],
-                selected_categories=config.get('selected_categories'),
-                ob_categories=config.get('ob_categories'),
-                ore_categories=config.get('ore_categories'),
-                value_attr=config.get('value_attr')
-            )
+            apply_vertical_sum(viz, st.session_state.block_sum_config)
 
-        # Process Block button
-        col_sum1, col_sum2, col_sum3, col_sum4 = st.columns([1, 1, 1, 1])
-
-        with col_sum1:
-            if st.button("📊 Calculate Block!", use_container_width=True):
-                if not st.session_state.is_summed:
-                    # Save original if not already saved
-                    st.session_state.original_df = viz.df.copy()
-
-                    # Apply vertical sum with configuration
-                    config = st.session_state.block_sum_config
-                    mode_map = {
-                        'Calculate Thickness': 'thickness',
-                        'Calculate Stripping Ratio': 'stripping_ratio',
-                        'Calculate Block Sum': 'block_sum',
-                        'Calculate Block Average': 'block_average'
-                    }
-
-                    viz.sum_vertical_blocks(
-                        categorical_attr=config.get('categorical_attr'),
-                        calc_mode=mode_map[config.get('calc_mode', 'Calculate Thickness')],
-                        selected_categories=config.get('selected_categories'),
-                        ob_categories=config.get('ob_categories'),
-                        ore_categories=config.get('ore_categories'),
-                        value_attr=config.get('value_attr')
-                    )
-
-                    st.session_state.is_summed = True
-                    mode_name = config.get('calc_mode', 'Calculate Thickness')
-                    st.success(f"✓ Process applied ({mode_name}): {len(viz.df):,} blocks")
-                    st.rerun()  # Rerun to update visualization
-                else:
-                    st.info("Already in summed mode. Click 'Reset' to restore original.")
-
-        with col_sum2:
-            if st.button("🔄 Reset Original", use_container_width=True):
-                if st.session_state.is_summed:
-                    viz.df = st.session_state.original_df.copy()
-                    st.session_state.is_summed = False
-                    st.success(f"✓ Original blocks restored: {len(viz.df):,} blocks")
-                    st.rerun()  # Rerun to update visualization
-                else:
-                    st.info("Already showing original data.")
-
-        with col_sum3:
-            # Export CSV button with metadata
-            csv_data = viz.export_to_csv_with_metadata().encode('utf-8')
-            filename_suffix = "summed" if st.session_state.is_summed else "original"
-            download_filename = f"block_model_{filename_suffix}_{len(viz.df)}_blocks.csv"
-
-            st.download_button(
-                label="💾 Export CSV",
-                data=csv_data,
-                file_name=download_filename,
-                mime="text/csv",
-                use_container_width=True,
-                help=f"Download {'summed' if st.session_state.is_summed else 'original'} data as CSV (Datamine format with metadata)"
-            )
-
-        with col_sum4:
-            if st.session_state.is_summed:
-                st.info(f"📊 **Summed**: {len(viz.df):,} blocks")
-            else:
-                st.info(f"📦 **Original**: {len(viz.df):,} blocks")
+        # Render control buttons and handle actions
+        action = render_block_sum_controls(viz)
+        if action in ['calculate', 'reset']:
+            st.rerun()  # Rerun to update visualization
 
         # ====================================================================
         # ATTRIBUTE SELECTION
