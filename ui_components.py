@@ -189,6 +189,11 @@ def render_block_sum_controls(viz: BlockModelVisualizer) -> Optional[str]:
             if st.session_state.is_summed:
                 viz.df = st.session_state.original_df.copy()
                 st.session_state.is_summed = False
+                # Clear any active filters when resetting
+                if 'filter_dict' in st.session_state:
+                    st.session_state.filter_dict = None
+                if 'filter_applied' in st.session_state:
+                    st.session_state.filter_applied = False
                 st.success(f"✓ Original blocks restored: {len(viz.df):,} blocks")
                 action = 'reset'
             else:

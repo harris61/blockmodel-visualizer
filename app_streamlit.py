@@ -92,6 +92,13 @@ uploaded_file = st.sidebar.file_uploader(
 if uploaded_file is not None:
     # Save uploaded file temporarily
     temp_path = Path(TEMP_UPLOAD_FILE)
+    # Remove old temp file if exists
+    if temp_path.exists():
+        try:
+            temp_path.unlink()
+        except Exception:
+            pass  # Ignore errors if file is in use
+
     with open(temp_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
     csv_file = str(temp_path)
@@ -179,7 +186,7 @@ def compute_block_sum(df_dict: dict, coord_cols: dict, dim_cols: dict, config_ha
         skip_rows: Number of header rows to skip
 
     Returns:
-        DataFrame: Processed dataframe
+        dict: Dictionary with processed dataframe and all attributes
     """
     # Reconstruct dataframe and visualizer
     temp_df = pd.DataFrame(df_dict)
@@ -198,7 +205,15 @@ def compute_block_sum(df_dict: dict, coord_cols: dict, dim_cols: dict, config_ha
     # Apply vertical sum
     apply_vertical_sum(temp_viz, config)
 
-    return temp_viz.df
+    # Return all necessary data to preserve state
+    return {
+        'df': temp_viz.df,
+        'coord_cols': temp_viz.coord_cols,
+        'dim_cols': temp_viz.dim_cols,
+        'metadata_lines': temp_viz.metadata_lines,
+        'original_header': temp_viz.original_header,
+        'original_column_order': temp_viz.original_column_order
+    }
 
 # ============================================================================
 # MAIN AREA - DATA LOADING AND VISUALIZATION
@@ -212,15 +227,8 @@ if csv_file is not None:
         with st.spinner("⏳ Stage 1/3: Loading data from CSV..."):
             viz = load_blockmodel_data(csv_file, skip_rows, cache_version=2)
 
-        # Show cache status with better messaging
-        cache_key = f"{csv_file}_{skip_rows}"
-        is_cached = st.session_state.get(f'loaded_{cache_key}', False)
-
-        if is_cached:
-            st.sidebar.success("✓ Data loaded (using cache - instant!)")
-        else:
-            st.sidebar.success("✓ Data loaded successfully")
-            st.session_state[f'loaded_{cache_key}'] = True
+        # Data loaded successfully (cache handled by @st.cache_data decorator)
+        st.sidebar.success("✓ Data loaded successfully")
 
         # ====================================================================
         # BLOCK SUM FEATURE
@@ -239,15 +247,12 @@ if csv_file is not None:
             config_str = json.dumps(st.session_state.block_sum_config, sort_keys=True, default=str)
             config_hash = hashlib.md5(config_str.encode()).hexdigest()
 
-            # Check if this config was already computed
-            cache_hit = st.session_state.get(f'block_sum_{config_hash}', False)
-
             # Convert original df to dict for caching
             df_dict = st.session_state.original_df.to_dict('list')
 
-            # Use cached computation
+            # Use cached computation (cache handled by @st.cache_data decorator)
             with st.spinner("⏳ Stage 2/3: Processing block calculations..."):
-                viz.df = compute_block_sum(
+                result = compute_block_sum(
                     df_dict,
                     viz.coord_cols,
                     viz.dim_cols,
@@ -260,12 +265,16 @@ if csv_file is not None:
                     viz.skip_rows
                 )
 
-            # Show cache status for block sum
-            if cache_hit:
-                st.sidebar.info("✓ Block calculations (using cache)")
-            else:
-                st.sidebar.info("✓ Block calculations completed")
-                st.session_state[f'block_sum_{config_hash}'] = True
+                # Update viz with ALL returned attributes to preserve state
+                viz.df = result['df']
+                viz.coord_cols = result['coord_cols']
+                viz.dim_cols = result['dim_cols']
+                viz.metadata_lines = result['metadata_lines']
+                viz.original_header = result['original_header']
+                viz.original_column_order = result['original_column_order']
+
+            # Calculation completed
+            st.sidebar.info("✓ Block calculations completed")
 
         # Render control buttons and handle actions
         action = render_block_sum_controls(viz)

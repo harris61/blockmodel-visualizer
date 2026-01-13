@@ -499,14 +499,38 @@ class BlockModelVisualizer:
 
         # Backward compatibility: ensure new attributes exist
         if not hasattr(self, 'original_header'):
-            print("WARNING: original_header not found, using current columns")
-            self.original_header = list(self.df.columns)
+            print("WARNING: original_header not found, attempting recovery...")
+            # Try to recover from file if possible
+            if hasattr(self, 'csv_file') and self.csv_file.exists() and hasattr(self, 'skip_rows'):
+                try:
+                    with open(self.csv_file, 'r', encoding='utf-8') as f:
+                        header_line = f.readline().strip()
+                        self.original_header = [col.strip() for col in header_line.split(',')]
+                    print(f"  ✓ Recovered {len(self.original_header)} columns from file")
+                except Exception as e:
+                    print(f"  ✗ Recovery failed: {e}, using current columns")
+                    self.original_header = list(self.df.columns)
+            else:
+                self.original_header = list(self.df.columns)
+
         if not hasattr(self, 'original_column_order'):
             print("WARNING: original_column_order not found, using current columns")
             self.original_column_order = list(self.df.columns)
+
         if not hasattr(self, 'metadata_lines'):
-            print("WARNING: metadata_lines not found, no metadata will be exported")
-            self.metadata_lines = []
+            print("WARNING: metadata_lines not found, attempting recovery...")
+            # Try to recover from file if possible
+            if hasattr(self, 'csv_file') and self.csv_file.exists() and hasattr(self, 'skip_rows') and self.skip_rows > 0:
+                try:
+                    with open(self.csv_file, 'r', encoding='utf-8') as f:
+                        lines = [next(f).strip() for _ in range(self.skip_rows + 1)]
+                        self.metadata_lines = lines[1:]  # Skip header, get metadata
+                    print(f"  ✓ Recovered {len(self.metadata_lines)} metadata lines from file")
+                except Exception as e:
+                    print(f"  ✗ Recovery failed: {e}, no metadata will be exported")
+                    self.metadata_lines = []
+            else:
+                self.metadata_lines = []
         else:
             print(f"Export: Found {len(self.metadata_lines)} metadata lines")
 
@@ -520,8 +544,8 @@ class BlockModelVisualizer:
         # Reorder: original columns first (in original order), then new columns
         ordered_cols = [col for col in self.original_column_order if col in current_cols] + new_cols
 
-        # Reorder dataframe to match
-        self.df = self.df[ordered_cols]
+        # Create reordered copy without mutating original dataframe
+        export_df = self.df[ordered_cols].copy()
 
         # Build CSV content
         output = io.StringIO()
@@ -555,7 +579,7 @@ class BlockModelVisualizer:
                     else:
                         # New column - generate metadata matching original format
                         # Detect type from data
-                        col_dtype = self.df[col].dtype
+                        col_dtype = export_df[col].dtype
                         if pd.api.types.is_float_dtype(col_dtype):
                             dtype_str = 'float'
                             default_val = '0.0'
@@ -589,7 +613,7 @@ class BlockModelVisualizer:
                     output.write(line + '\n')
 
         # Write data with 6 decimal places (Datamine/Vulcan format requirement)
-        self.df.to_csv(output, index=False, header=False, float_format='%.6f')
+        export_df.to_csv(output, index=False, header=False, float_format='%.6f')
 
         return output.getvalue()
 
