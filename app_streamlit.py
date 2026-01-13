@@ -210,7 +210,7 @@ if csv_file is not None:
         # STAGE 1: Load data (cached)
         # ====================================================================
         with st.spinner("⏳ Stage 1/3: Loading data from CSV..."):
-            viz = load_blockmodel_data(csv_file, skip_rows)
+            viz = load_blockmodel_data(csv_file, skip_rows, cache_version=2)
 
         # Show cache status with better messaging
         cache_key = f"{csv_file}_{skip_rows}"
@@ -244,14 +244,6 @@ if csv_file is not None:
 
             # Convert original df to dict for caching
             df_dict = st.session_state.original_df.to_dict('list')
-
-            # Backward compatibility: ensure new attributes exist (for cached objects)
-            if not hasattr(viz, 'original_header'):
-                viz.original_header = list(viz.df.columns)
-            if not hasattr(viz, 'original_column_order'):
-                viz.original_column_order = list(viz.df.columns)
-            if not hasattr(viz, 'metadata_lines'):
-                viz.metadata_lines = []
 
             # Use cached computation
             with st.spinner("⏳ Stage 2/3: Processing block calculations..."):

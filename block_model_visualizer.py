@@ -499,11 +499,16 @@ class BlockModelVisualizer:
 
         # Backward compatibility: ensure new attributes exist
         if not hasattr(self, 'original_header'):
+            print("WARNING: original_header not found, using current columns")
             self.original_header = list(self.df.columns)
         if not hasattr(self, 'original_column_order'):
+            print("WARNING: original_column_order not found, using current columns")
             self.original_column_order = list(self.df.columns)
         if not hasattr(self, 'metadata_lines'):
+            print("WARNING: metadata_lines not found, no metadata will be exported")
             self.metadata_lines = []
+        else:
+            print(f"Export: Found {len(self.metadata_lines)} metadata lines")
 
         # Get current column names from dataframe
         current_cols = list(self.df.columns)
