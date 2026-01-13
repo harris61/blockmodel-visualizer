@@ -1135,7 +1135,7 @@ class BlockModelVisualizer:
 
         # Build hover text using vectorized string operations (much faster than iterrows)
         hover_parts = []
-        hover_parts.append(["<b>Block Info</b><br>"] * len(self.df))
+        hover_parts.append(pd.Series(["<b>Block Info</b><br>"] * len(self.df), index=self.df.index))
         hover_parts.append(self.df[self.coord_cols['x']].apply(lambda v: f"X: {v:.2f}<br>"))
         hover_parts.append(self.df[self.coord_cols['y']].apply(lambda v: f"Y: {v:.2f}<br>"))
         hover_parts.append(self.df[self.coord_cols['z']].apply(lambda v: f"Z: {v:.2f}<br>"))
