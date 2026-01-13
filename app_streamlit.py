@@ -80,7 +80,7 @@ viz_type = "Point Cloud (Fast)"
 # ============================================================================
 # FILE SELECTION
 # ============================================================================
-st.sidebar.markdown("#### 📁 File Upload")
+st.sidebar.markdown("#### File Upload")
 
 csv_file = None
 uploaded_file = st.sidebar.file_uploader(
@@ -102,7 +102,7 @@ if uploaded_file is not None:
     with open(temp_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
     csv_file = str(temp_path)
-    st.sidebar.success(f"✓ Loaded: {uploaded_file.name}")
+    st.sidebar.success(f"Loaded: {uploaded_file.name}")
 
 # Skip rows parameter
 skip_rows = st.sidebar.number_input(
@@ -117,7 +117,7 @@ skip_rows = st.sidebar.number_input(
 # PARAMETERS
 # ============================================================================
 st.sidebar.markdown("---")
-st.sidebar.markdown("#### ⚙️ Parameters")
+st.sidebar.markdown("#### Parameters")
 
 # Process all blocks by default (no sampling)
 sample_size = None
@@ -128,7 +128,7 @@ opacity = DEFAULT_OPACITY
 marker_size = DEFAULT_MARKER_SIZE
 
 colorscale = st.sidebar.selectbox(
-    "🎨 Colorscale:",
+    "Colorscale:",
     AVAILABLE_COLORSCALES,
     help="Color scheme for visualization (gradient mode)"
 )
@@ -136,7 +136,7 @@ colorscale = st.sidebar.selectbox(
 # Color mode (gradient vs discrete)
 st.sidebar.markdown("")
 color_mode = st.sidebar.radio(
-    "🖌️ Color scheme type:",
+    "Color scheme type:",
     COLOR_MODE_OPTIONS,
     index=0,
     help="Auto-detect: Automatically choose based on data type\n"
@@ -224,11 +224,11 @@ if csv_file is not None:
         # ====================================================================
         # STAGE 1: Load data (cached)
         # ====================================================================
-        with st.spinner("⏳ Stage 1/3: Loading data from CSV..."):
+        with st.spinner("Stage 1/3: Loading data from CSV..."):
             viz = load_blockmodel_data(csv_file, skip_rows, cache_version=2)
 
         # Data loaded successfully (cache handled by @st.cache_data decorator)
-        st.sidebar.success("✓ Data loaded successfully")
+        st.sidebar.success("Data loaded successfully")
 
         # ====================================================================
         # BLOCK SUM FEATURE
@@ -251,7 +251,7 @@ if csv_file is not None:
             df_dict = st.session_state.original_df.to_dict('list')
 
             # Use cached computation (cache handled by @st.cache_data decorator)
-            with st.spinner("⏳ Stage 2/3: Processing block calculations..."):
+            with st.spinner("Stage 2/3: Processing block calculations..."):
                 result = compute_block_sum(
                     df_dict,
                     viz.coord_cols,
@@ -274,7 +274,7 @@ if csv_file is not None:
                 viz.original_column_order = result['original_column_order']
 
             # Calculation completed
-            st.sidebar.info("✓ Block calculations completed")
+            st.sidebar.info("Block calculations completed")
 
         # Render control buttons and handle actions
         action = render_block_sum_controls(viz)
@@ -284,7 +284,7 @@ if csv_file is not None:
         # ====================================================================
         # ATTRIBUTE SELECTION
         # ====================================================================
-        st.markdown("## 🎯 Attribute Selection")
+        st.markdown("## Attribute Selection")
         st.markdown("---")
 
         # Get numeric columns
@@ -341,7 +341,7 @@ if csv_file is not None:
         # ====================================================================
         # FILTERING (DEBOUNCED with Apply Button)
         # ====================================================================
-        with st.expander("🔍 Data Filtering (Optional)"):
+        with st.expander("Data Filtering (Optional)"):
             st.write("Filter blocks by attribute values:")
 
             filter_enabled = st.checkbox("Enable filtering")
@@ -403,12 +403,12 @@ if csv_file is not None:
                 col_filter1, col_filter2 = st.columns(2)
 
                 with col_filter1:
-                    if st.button("🔍 Apply Filter", use_container_width=True):
+                    if st.button("Apply Filter", use_container_width=True):
                         st.session_state.filter_dict = temp_filter_dict
                         st.session_state.filter_applied = True
 
                 with col_filter2:
-                    if st.button("🔄 Clear Filter", use_container_width=True):
+                    if st.button("Clear Filter", use_container_width=True):
                         st.session_state.filter_dict = None
                         st.session_state.filter_applied = False
 
@@ -424,16 +424,16 @@ if csv_file is not None:
         # ====================================================================
         # AUTO-GENERATE VISUALIZATION
         # ====================================================================
-        st.markdown("## 🎨 3D Point Cloud Visualization")
+        st.markdown("## 3D Point Cloud Visualization")
         st.markdown("---")
 
         if len(selected_attrs) == 0 or color_attr is None:
-            st.info("👆 Please select an attribute from the dropdown above to visualize")
+            st.info("Please select an attribute from the dropdown above to visualize")
         else:
             # ================================================================
             # STAGE 3: Generate visualization
             # ================================================================
-            with st.spinner(f"⏳ Stage 3/3: Creating 3D visualization for {len(viz.df):,} blocks..."):
+            with st.spinner(f"Stage 3/3: Creating 3D visualization for {len(viz.df):,} blocks..."):
                 # Create point cloud visualization
                 fig = viz.visualize_scatter(
                     color_by=color_attr,
@@ -444,7 +444,7 @@ if csv_file is not None:
                 )
 
             # Show completion status
-            st.sidebar.success(f"✓ Visualization ready! ({len(viz.df):,} blocks)")
+            st.sidebar.success(f"Visualization ready ({len(viz.df):,} blocks)")
 
             # Display
             st.plotly_chart(fig, use_container_width=True)
@@ -453,7 +453,7 @@ if csv_file is not None:
             st.markdown(get_3d_controls_html(), unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"❌ Error: {e}")
+        st.error(f"Error: {e}")
         import traceback
         st.code(traceback.format_exc())
 

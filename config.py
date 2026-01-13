@@ -11,7 +11,7 @@ from typing import List, Dict
 # ==============================================================================
 APP_VERSION = "1.0"
 APP_TITLE = "Block Model Visualizer"
-APP_ICON = "📦"
+APP_ICON = "B"
 
 # ==============================================================================
 # DEFAULT VALUES

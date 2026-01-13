@@ -37,12 +37,12 @@ def render_block_sum_config(viz: BlockModelVisualizer) -> Dict[str, Any]:
     Returns:
         dict: Configuration dictionary with user selections
     """
-    st.markdown("## ⚙️ Block Sum Configuration")
+    st.markdown("## Block Sum Configuration")
     st.markdown("---")
 
     # Calculation Mode selection
     calc_mode = st.radio(
-        "📊 Calculation Mode:",
+        "Calculation Mode:",
         CALC_MODE_OPTIONS,
         horizontal=False,
         help="Thickness: Calculate thickness by category | SR: OB/Ore ratio | "
@@ -112,10 +112,10 @@ def render_block_sum_config(viz: BlockModelVisualizer) -> Dict[str, Any]:
                         help=f"Choose numeric attribute to {action_verb}"
                     )
                 else:
-                    st.warning("⚠️ No numeric attributes found in dataset.")
+                    st.warning("No numeric attributes found in dataset.")
 
     elif calc_mode in CALC_MODE_OPTIONS and not cat_cols:
-        st.warning("⚠️ No categorical attributes found in dataset.")
+        st.warning("No categorical attributes found in dataset.")
 
     # Build and store configuration
     config = {
@@ -169,7 +169,7 @@ def render_block_sum_controls(viz: BlockModelVisualizer) -> Optional[str]:
 
     # Calculate Button
     with col_sum1:
-        if st.button("📊 Calculate Block!", use_container_width=True):
+        if st.button("Calculate Block!", use_container_width=True):
             if not st.session_state.is_summed:
                 st.session_state.original_df = viz.df.copy()
 
@@ -178,14 +178,14 @@ def render_block_sum_controls(viz: BlockModelVisualizer) -> Optional[str]:
 
                 st.session_state.is_summed = True
                 mode_name = config.get('calc_mode', 'Calculate Thickness')
-                st.success(f"✓ Process applied ({mode_name}): {len(viz.df):,} blocks")
+                st.success(f"Process applied ({mode_name}): {len(viz.df):,} blocks")
                 action = 'calculate'
             else:
                 st.info("Already in summed mode. Click 'Reset' to restore original.")
 
     # Reset Button
     with col_sum2:
-        if st.button("🔄 Reset Original", use_container_width=True):
+        if st.button("Reset Original", use_container_width=True):
             if st.session_state.is_summed:
                 viz.df = st.session_state.original_df.copy()
                 st.session_state.is_summed = False
@@ -194,7 +194,7 @@ def render_block_sum_controls(viz: BlockModelVisualizer) -> Optional[str]:
                     st.session_state.filter_dict = None
                 if 'filter_applied' in st.session_state:
                     st.session_state.filter_applied = False
-                st.success(f"✓ Original blocks restored: {len(viz.df):,} blocks")
+                st.success(f"Original blocks restored: {len(viz.df):,} blocks")
                 action = 'reset'
             else:
                 st.info("Already showing original data.")
@@ -206,7 +206,7 @@ def render_block_sum_controls(viz: BlockModelVisualizer) -> Optional[str]:
         download_filename = f"block_model_{filename_suffix}_{len(viz.df)}_blocks.csv"
 
         st.download_button(
-            label="💾 Export CSV",
+            label="Export CSV",
             data=csv_data,
             file_name=download_filename,
             mime="text/csv",
@@ -217,8 +217,8 @@ def render_block_sum_controls(viz: BlockModelVisualizer) -> Optional[str]:
     # Status Info
     with col_sum4:
         if st.session_state.is_summed:
-            st.info(f"📊 **Summed**: {len(viz.df):,} blocks")
+            st.info(f"**Summed**: {len(viz.df):,} blocks")
         else:
-            st.info(f"📦 **Original**: {len(viz.df):,} blocks")
+            st.info(f"**Original**: {len(viz.df):,} blocks")
 
     return action

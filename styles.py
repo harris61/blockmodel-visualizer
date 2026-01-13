@@ -16,66 +16,67 @@ def get_custom_css() -> str:
 <style>
     /* Main container styling */
     .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+        padding-top: 0.5rem;
+        padding-bottom: 1.5rem;
     }
 
     /* Header styling */
     h1 {
-        color: #1e3a8a;
+        color: #0f172a;
         font-weight: 700;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
     }
 
     h2 {
-        color: #1e40af;
+        color: #1e293b;
         font-weight: 600;
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
-        border-bottom: 2px solid #3b82f6;
-        padding-bottom: 0.5rem;
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+        border-bottom: 1px solid #cbd5e1;
+        padding-bottom: 0.4rem;
     }
 
     h3 {
-        color: #2563eb;
+        color: #1f2937;
         font-weight: 600;
-        margin-top: 1rem;
+        margin-top: 0.75rem;
     }
 
     /* Card-like containers */
     div[data-testid="stExpander"] {
-        border: 1px solid #e5e7eb;
+        border: 1px solid #e2e8f0;
         border-radius: 8px;
-        background-color: #f9fafb;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        margin-bottom: 1rem;
+        background-color: #ffffff;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        margin-bottom: 0.75rem;
     }
 
     /* Sidebar styling */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #f8fafc 0%, #e0e7ff 100%);
+        background: #f8fafc;
+        border-right: 1px solid #e2e8f0;
     }
 
     section[data-testid="stSidebar"] > div {
-        padding-top: 2rem;
+        padding-top: 0.5rem;
     }
 
     /* Button styling - apply same gradient style to ALL buttons */
     .stButton > button,
     .stDownloadButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        color: white !important;
+        background: #2563eb !important;
+        color: #ffffff !important;
         border-radius: 6px;
-        font-weight: 500;
-        border: 1px solid #000000 !important;
+        font-weight: 600;
+        border: 1px solid #1d4ed8 !important;
     }
 
     /* Additional selector for button styling */
     div[data-testid="stButton"] button,
     div[data-testid="stDownloadButton"] button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        color: white !important;
-        border: 1px solid #000000 !important;
+        background: #2563eb !important;
+        color: #ffffff !important;
+        border: 1px solid #1d4ed8 !important;
         box-sizing: border-box;
     }
 
@@ -112,17 +113,17 @@ def get_custom_css() -> str:
 
     /* Success message */
     .stSuccess {
-        background-color: #d1fae5;
+        background-color: #ecfdf3;
         color: #065f46;
-        border-left: 4px solid #10b981;
+        border-left: 3px solid #10b981;
         border-radius: 6px;
     }
 
     /* Warning message */
     .stWarning {
-        background-color: #fef3c7;
+        background-color: #fffbeb;
         color: #92400e;
-        border-left: 4px solid #f59e0b;
+        border-left: 3px solid #f59e0b;
         border-radius: 6px;
     }
 
