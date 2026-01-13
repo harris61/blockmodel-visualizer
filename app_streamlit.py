@@ -293,7 +293,7 @@ if csv_file is not None:
                           if not any(kw in col.lower() for kw in EXCLUDE_ATTRIBUTE_KEYWORDS)]
 
         # Get categorical columns
-        categorical_cols = viz.df.select_dtypes(include=['object']).columns.tolist()
+        categorical_cols = viz.df.select_dtypes(include=['object', 'category', 'string']).columns.tolist()
 
         # Radio button to choose attribute type
         attr_type = st.radio(

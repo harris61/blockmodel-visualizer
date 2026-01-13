@@ -233,7 +233,7 @@ class BlockModelVisualizer:
         """
         Get list of categorical columns suitable for visualization
         """
-        cat_cols = self.df.select_dtypes(include=['object']).columns.tolist()
+        cat_cols = self.df.select_dtypes(include=['object', 'category', 'string']).columns.tolist()
         return cat_cols
 
     def _get_columns_to_sum(self) -> Tuple[List[str], List[str], List[str]]:
@@ -261,7 +261,7 @@ class BlockModelVisualizer:
 
         exclude_cols = list(set([col for col in exclude_cols if col in numeric_cols]))
         sum_cols = [col for col in numeric_cols if col not in exclude_cols]
-        categorical_cols = self.df.select_dtypes(include=['object']).columns.tolist()
+        categorical_cols = self.df.select_dtypes(include=['object', 'category', 'string']).columns.tolist()
 
         return sum_cols, categorical_cols, exclude_cols
 

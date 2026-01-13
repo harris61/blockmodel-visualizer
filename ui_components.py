@@ -50,7 +50,7 @@ def render_block_sum_config(viz: BlockModelVisualizer) -> Dict[str, Any]:
     )
 
     # Get categorical and numeric columns
-    cat_cols = viz.df.select_dtypes(include=['object']).columns.tolist()
+    cat_cols = viz.df.select_dtypes(include=['object', 'category', 'string']).columns.tolist()
     numeric_cols = viz.df.select_dtypes(include=[np.number]).columns.tolist()
 
     # Initialize config variables
