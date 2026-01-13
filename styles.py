@@ -1,5 +1,5 @@
 """
-CSS Styles for Block Model Visualizer Streamlit App
+CSS Styles for Block Model Column Calculator Streamlit App
 
 This module contains all CSS styling for the application.
 """

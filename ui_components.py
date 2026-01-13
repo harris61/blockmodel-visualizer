@@ -1,5 +1,5 @@
 """
-UI Components for Block Model Visualizer
+UI Components for Block Model Column Calculator
 
 This module contains reusable UI components for the Streamlit app,
 particularly the Block Sum configuration section.

@@ -1,5 +1,5 @@
 """
-3D Block Model Visualizer with Multiple Visualization Modes
+3D Block Model Column Calculator with Multiple Visualization Modes
 
 Features:
 - Point cloud visualization (fast, for large datasets)
@@ -1271,7 +1271,7 @@ class BlockModelVisualizer:
 def main():
     """Command-line interface"""
     parser = argparse.ArgumentParser(
-        description='Advanced 3D Block Model Visualizer with Interactive Menus'
+        description='Advanced 3D Block Model Column Calculator with Interactive Menus'
     )
 
     parser.add_argument('-i', '--input', required=True, help='Input CSV file')

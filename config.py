@@ -1,5 +1,5 @@
 """
-Configuration and Constants for Block Model Visualizer
+Configuration and Constants for Block Model Column Calculator
 
 This module contains all configuration values and constants used throughout the application.
 """

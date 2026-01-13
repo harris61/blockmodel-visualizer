@@ -1,5 +1,5 @@
 """
-Streamlit Web Interface for Block Model Visualizer
+Streamlit Web Interface for Block Model Column Calculator
 
 Interactive web app to:
 - Select/upload CSV files

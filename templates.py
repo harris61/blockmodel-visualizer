@@ -1,5 +1,5 @@
 """
-HTML Templates for Block Model Visualizer Streamlit App
+HTML Templates for Block Model Column Calculator Streamlit App
 
 This module contains all HTML template generators for the application.
 """
