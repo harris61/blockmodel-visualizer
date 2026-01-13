@@ -144,10 +144,15 @@ color_mode_param = COLOR_MODE_MAPPING[color_mode]
 # CACHED DATA LOADING FUNCTION
 # ============================================================================
 @st.cache_data(show_spinner=False)
-def load_blockmodel_data(csv_path: str, skip_rows: int):
+def load_blockmodel_data(csv_path: str, skip_rows: int, cache_version: int = 2):
     """
     Cached data loading function to prevent reloading data on every parameter change.
     Cache is invalidated only when csv_path or skip_rows changes.
+
+    Args:
+        csv_path: Path to CSV file
+        skip_rows: Number of header rows to skip
+        cache_version: Version number to invalidate cache when data structure changes
     """
     viz = BlockModelVisualizer(csv_path, skip_rows=skip_rows)
     viz.load_data()
@@ -239,6 +244,14 @@ if csv_file is not None:
 
             # Convert original df to dict for caching
             df_dict = st.session_state.original_df.to_dict('list')
+
+            # Backward compatibility: ensure new attributes exist (for cached objects)
+            if not hasattr(viz, 'original_header'):
+                viz.original_header = list(viz.df.columns)
+            if not hasattr(viz, 'original_column_order'):
+                viz.original_column_order = list(viz.df.columns)
+            if not hasattr(viz, 'metadata_lines'):
+                viz.metadata_lines = []
 
             # Use cached computation
             with st.spinner("⏳ Stage 2/3: Processing block calculations..."):

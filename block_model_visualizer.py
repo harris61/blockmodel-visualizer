@@ -497,6 +497,14 @@ class BlockModelVisualizer:
         """
         import io
 
+        # Backward compatibility: ensure new attributes exist
+        if not hasattr(self, 'original_header'):
+            self.original_header = list(self.df.columns)
+        if not hasattr(self, 'original_column_order'):
+            self.original_column_order = list(self.df.columns)
+        if not hasattr(self, 'metadata_lines'):
+            self.metadata_lines = []
+
         # Get current column names from dataframe
         current_cols = list(self.df.columns)
 
