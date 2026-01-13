@@ -10,7 +10,7 @@ from typing import List, Dict
 # APPLICATION METADATA
 # ==============================================================================
 APP_VERSION = "1.0"
-APP_TITLE = "Block Model Visualizer"
+APP_TITLE = "Block Model Column Calculator"
 APP_ICON = "B"
 
 # ==============================================================================

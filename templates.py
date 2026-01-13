@@ -13,8 +13,8 @@ def get_header_html() -> str:
         str: HTML string for the header section
     """
     return """
-<div style='text-align: left; padding: 0.75rem 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 1rem;'>
-    <h1 style='color: #0f172a; margin: 0; font-size: 2rem; font-weight: 700;'>3D Block Model Visualizer</h1>
+<div style='text-align: left; padding: 0.5rem 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 0.75rem;'>
+    <h1 style='color: #0f172a; margin: 0; font-size: 2rem; font-weight: 700;'>Block Model Column Calculator</h1>
     <p style='color: #475569; margin: 0.25rem 0 0 0; font-size: 1rem;'>Interactive web interface untuk visualisasi block model tambang</p>
 </div>
 """
@@ -170,7 +170,7 @@ def get_footer_html(logo_base64: str) -> str:
     """
     return f"""
 <div style='background: #f8fafc; padding: 1rem; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0;'>
-    <p style='color: #0f172a; font-weight: 700; font-size: 1.05rem; margin: 0;'>Block Model Visualizer</p>
+    <p style='color: #0f172a; font-weight: 700; font-size: 1.05rem; margin: 0;'>Block Model Column Calculator</p>
     <p style='color: #475569; font-size: 0.9rem; margin: 0.4rem 0 0.8rem 0;'>v1.0</p>
     <div style='border-top: 1px solid #e2e8f0; padding-top: 0.75rem; padding-bottom: 0.75rem;'>
         <p style='color: #64748b; font-size: 0.8rem; margin: 0.3rem 0 0.2rem 0;'>Created by</p>

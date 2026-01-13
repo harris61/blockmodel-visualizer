@@ -16,8 +16,8 @@ def get_custom_css() -> str:
 <style>
     /* Main container styling */
     .main .block-container {
-        padding-top: 0.5rem;
-        padding-bottom: 1.5rem;
+        padding-top: 0.25rem;
+        padding-bottom: 1.25rem;
     }
 
     /* Header styling */
@@ -58,7 +58,7 @@ def get_custom_css() -> str:
     }
 
     section[data-testid="stSidebar"] > div {
-        padding-top: 0.5rem;
+        padding-top: 0.25rem;
     }
 
     /* Button styling - apply same gradient style to ALL buttons */

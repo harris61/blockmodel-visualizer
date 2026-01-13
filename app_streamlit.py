@@ -72,6 +72,14 @@ st.markdown(get_custom_css(), unsafe_allow_html=True)
 # Display header
 st.markdown(get_header_html(), unsafe_allow_html=True)
 
+# Sidebar header (app info + credits)
+img = Image.open("2.png")
+buffered = BytesIO()
+img.save(buffered, format="PNG")
+img_str = base64.b64encode(buffered.getvalue()).decode()
+
+st.sidebar.markdown(get_footer_html(img_str), unsafe_allow_html=True)
+
 # Sidebar for file selection and parameters
 
 # Use point cloud visualization by default (3D boxes removed due to performance)
@@ -470,14 +478,4 @@ else:
     st.markdown(get_step3_html(), unsafe_allow_html=True)
     st.markdown(get_step4_html(), unsafe_allow_html=True)
 
-# Footer with modern styling
-st.sidebar.markdown("---")
-
-# Read logo and encode to base64
-img = Image.open("2.png")
-buffered = BytesIO()
-img.save(buffered, format="PNG")
-img_str = base64.b64encode(buffered.getvalue()).decode()
-
-# Display footer
-st.sidebar.markdown(get_footer_html(img_str), unsafe_allow_html=True)
+# Footer removed from sidebar; header shows app info now.

@@ -1,4 +1,4 @@
-# 📦 3D Block Model Visualizer
+# Block Model Column Calculator
 
 Interactive web-based tool untuk visualisasi block model tambang menggunakan point cloud 3D. Mendukung perhitungan thickness dan stripping ratio untuk pit optimization.
 
