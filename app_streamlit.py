@@ -154,7 +154,9 @@ def load_blockmodel_data(csv_path: str, skip_rows: int):
     return viz
 
 @st.cache_data(show_spinner=False)
-def compute_block_sum(df_dict: dict, coord_cols: dict, config_hash: str, config: dict):
+def compute_block_sum(df_dict: dict, coord_cols: dict, dim_cols: dict, config_hash: str, config: dict,
+                       metadata_lines: list, original_header: list, original_column_order: list,
+                       csv_file: str, skip_rows: int):
     """
     Cached block sum computation to prevent recalculation on every parameter change.
     Cache is invalidated only when the configuration changes.
@@ -162,8 +164,14 @@ def compute_block_sum(df_dict: dict, coord_cols: dict, config_hash: str, config:
     Args:
         df_dict: Dictionary representation of the dataframe
         coord_cols: Coordinate column mapping
+        dim_cols: Dimension column mapping
         config_hash: Hash of configuration to use as cache key
         config: Configuration dictionary
+        metadata_lines: Original metadata lines from CSV
+        original_header: Original header column names
+        original_column_order: Original column order
+        csv_file: Path to CSV file
+        skip_rows: Number of header rows to skip
 
     Returns:
         DataFrame: Processed dataframe
@@ -173,6 +181,14 @@ def compute_block_sum(df_dict: dict, coord_cols: dict, config_hash: str, config:
     temp_viz = BlockModelVisualizer.__new__(BlockModelVisualizer)
     temp_viz.df = temp_df
     temp_viz.coord_cols = coord_cols
+    temp_viz.dim_cols = dim_cols
+
+    # Restore header-related attributes for proper export
+    temp_viz.metadata_lines = metadata_lines
+    temp_viz.original_header = original_header
+    temp_viz.original_column_order = original_column_order
+    temp_viz.csv_file = Path(csv_file)
+    temp_viz.skip_rows = skip_rows
 
     # Apply vertical sum
     apply_vertical_sum(temp_viz, config)
@@ -226,7 +242,18 @@ if csv_file is not None:
 
             # Use cached computation
             with st.spinner("⏳ Stage 2/3: Processing block calculations..."):
-                viz.df = compute_block_sum(df_dict, viz.coord_cols, config_hash, st.session_state.block_sum_config)
+                viz.df = compute_block_sum(
+                    df_dict,
+                    viz.coord_cols,
+                    viz.dim_cols,
+                    config_hash,
+                    st.session_state.block_sum_config,
+                    viz.metadata_lines,
+                    viz.original_header,
+                    viz.original_column_order,
+                    str(viz.csv_file),
+                    viz.skip_rows
+                )
 
             # Show cache status for block sum
             if cache_hit:

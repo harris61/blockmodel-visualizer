@@ -39,6 +39,8 @@ class BlockModelVisualizer:
         self.coord_cols: Optional[Dict[str, str]] = None
         self.dim_cols: Optional[Dict[str, str]] = None
         self.metadata_lines: List[str] = []  # Store original metadata lines
+        self.original_header: List[str] = []  # Store original header column names
+        self.original_column_order: List[str] = []  # Store original column order
 
         if not self.csv_file.exists():
             raise FileNotFoundError(f"File not found: {csv_file}")
@@ -48,16 +50,28 @@ class BlockModelVisualizer:
         print(f"Loading data from {self.csv_file}...")
 
         if self.skip_rows > 0:
-            # Store metadata lines for later export
+            # Store ALL header lines (header + metadata) for later export
             with open(self.csv_file, 'r', encoding='utf-8') as f:
                 lines = [next(f).strip() for _ in range(self.skip_rows + 1)]
-                self.metadata_lines = lines[1:]  # Skip header, store metadata rows
+                header_line = lines[0]  # First line is the column names
+                self.metadata_lines = lines[1:]  # Metadata rows
+
+                # Parse and store original header column names
+                self.original_header = [col.strip() for col in header_line.split(',')]
 
             self.df = pd.read_csv(self.csv_file, skiprows=range(1, self.skip_rows + 1))
+
+            # Store original column order from dataframe
+            self.original_column_order = list(self.df.columns)
+
             print(f"Data loaded: {len(self.df)} rows, {len(self.df.columns)} columns")
+            print(f"Stored header line with {len(self.original_header)} columns")
             print(f"Stored {len(self.metadata_lines)} metadata lines for export")
         else:
+            # No metadata, just store header
             self.df = pd.read_csv(self.csv_file)
+            self.original_header = list(self.df.columns)
+            self.original_column_order = list(self.df.columns)
             print(f"Data loaded: {len(self.df)} rows, {len(self.df.columns)} columns")
 
         self._detect_columns()
@@ -470,71 +484,96 @@ class BlockModelVisualizer:
 
     def export_to_csv_with_metadata(self) -> str:
         """
-        Export current dataframe to CSV with Datamine metadata format
+        Export current dataframe to CSV preserving original header format
 
-        Generic export that preserves:
-        - All columns from input file (in their original order)
-        - All metadata rows
-        - Block model structure as-is
-
-        Does not assume any specific software format (Vulcan, Datamine, etc.)
+        Preserves:
+        - Original header line format (exact same for original columns)
+        - All metadata rows with correct mapping
+        - Column order: original columns first, then new columns
+        - New columns get metadata that matches the format of original
 
         Returns:
-            str: CSV content with metadata as string
+            str: CSV content with preserved header as string
         """
         import io
 
-        # Get current column names (preserve whatever columns exist)
+        # Get current column names from dataframe
         current_cols = list(self.df.columns)
+
+        # Identify original vs new columns
+        original_cols_set = set(self.original_column_order)
+        new_cols = [col for col in current_cols if col not in original_cols_set]
+
+        # Reorder: original columns first (in original order), then new columns
+        ordered_cols = [col for col in self.original_column_order if col in current_cols] + new_cols
+
+        # Reorder dataframe to match
+        self.df = self.df[ordered_cols]
 
         # Build CSV content
         output = io.StringIO()
 
-        if self.metadata_lines and len(self.metadata_lines) == 3:
-            # Parse original metadata to get column mapping
-            # Line 0: Variable descriptions
-            # Line 1: Variable types
-            # Line 2: Variable defaults
+        # Write header line
+        output.write(','.join(ordered_cols) + '\n')
 
-            desc_parts = self.metadata_lines[0].split(',')
-            type_parts = self.metadata_lines[1].split(',')
-            default_parts = self.metadata_lines[2].split(',')
+        # Write metadata lines if they exist
+        if self.metadata_lines:
+            if len(self.metadata_lines) == 3:
+                # Standard Datamine format: description, type, default
+                desc_parts = [s.strip() for s in self.metadata_lines[0].split(',')]
+                type_parts = [s.strip() for s in self.metadata_lines[1].split(',')]
+                default_parts = [s.strip() for s in self.metadata_lines[2].split(',')]
 
-            # Read original header to map columns
-            with open(self.csv_file, 'r', encoding='utf-8') as f:
-                original_header = f.readline().strip().split(',')
+                # Create column index mapping from original header
+                col_to_idx = {col: idx for idx, col in enumerate(self.original_header)}
 
-            # Create column index mapping
-            col_to_idx = {col: idx for idx, col in enumerate(original_header)}
+                # Build metadata for all columns
+                new_desc = []
+                new_types = []
+                new_defaults = []
 
-            # Build metadata for current columns
-            new_desc = []
-            new_types = []
-            new_defaults = []
+                for col in ordered_cols:
+                    if col in col_to_idx:
+                        # Original column - use original metadata
+                        idx = col_to_idx[col]
+                        new_desc.append(desc_parts[idx] if idx < len(desc_parts) else '')
+                        new_types.append(type_parts[idx] if idx < len(type_parts) else 'float')
+                        new_defaults.append(default_parts[idx] if idx < len(default_parts) else '0.0')
+                    else:
+                        # New column - generate metadata matching original format
+                        # Detect type from data
+                        col_dtype = self.df[col].dtype
+                        if pd.api.types.is_float_dtype(col_dtype):
+                            dtype_str = 'float'
+                            default_val = '0.0'
+                        elif pd.api.types.is_integer_dtype(col_dtype):
+                            dtype_str = 'int'
+                            default_val = '0'
+                        else:
+                            dtype_str = 'string'
+                            default_val = ''
 
-            for col in current_cols:
-                if col in col_to_idx:
-                    idx = col_to_idx[col]
-                    new_desc.append(desc_parts[idx] if idx < len(desc_parts) else '')
-                    new_types.append(type_parts[idx] if idx < len(type_parts) else 'float')
-                    new_defaults.append(default_parts[idx] if idx < len(default_parts) else '0.0')
-                else:
-                    # New column (e.g., from aggregation)
-                    new_desc.append(f'Datamine field : {col}')
-                    new_types.append('float')
-                    new_defaults.append('0.0')
+                        # Match description format from original
+                        # Check if original uses "Datamine field :" format
+                        if desc_parts and 'Datamine field' in desc_parts[0]:
+                            new_desc.append(f'Datamine field : {col}')
+                        else:
+                            new_desc.append(col)
 
-            # Write header
-            output.write(','.join(current_cols) + '\n')
+                        new_types.append(dtype_str)
+                        new_defaults.append(default_val)
 
-            # Write metadata
-            output.write(','.join(new_desc) + '\n')
-            output.write(','.join(new_types) + '\n')
-            output.write(','.join(new_defaults) + '\n')
+                # Write metadata rows
+                output.write(','.join(new_desc) + '\n')
+                output.write(','.join(new_types) + '\n')
+                output.write(','.join(new_defaults) + '\n')
 
-        else:
-            # No metadata available, write simple header
-            output.write(','.join(current_cols) + '\n')
+            else:
+                # Non-standard metadata format - preserve as-is for original columns
+                # For simplicity, just write the metadata lines as-is
+                # (This assumes metadata lines apply to all original columns)
+                for line in self.metadata_lines:
+                    output.write(line + '\n')
 
         # Write data with 6 decimal places (Datamine/Vulcan format requirement)
         self.df.to_csv(output, index=False, header=False, float_format='%.6f')
