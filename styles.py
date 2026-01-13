@@ -16,7 +16,7 @@ def get_custom_css() -> str:
 <style>
     /* Main container styling */
     .main .block-container {
-        padding-top: 0.25rem;
+        padding-top: 0.125rem;
         padding-bottom: 1.25rem;
     }
 
