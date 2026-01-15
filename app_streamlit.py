@@ -111,6 +111,16 @@ if uploaded_file is not None:
         f.write(uploaded_file.getbuffer())
     csv_file = str(temp_path)
     st.sidebar.success(f"Loaded: {uploaded_file.name}")
+    # Reset state when a different file is uploaded to avoid stale cached data
+    file_bytes = uploaded_file.getbuffer()
+    file_hash = hashlib.md5(file_bytes).hexdigest()
+    if st.session_state.get("uploaded_file_hash") != file_hash:
+        st.session_state.uploaded_file_hash = file_hash
+        for key in ["original_df", "is_summed", "block_sum_config", "filter_dict", "filter_applied"]:
+            if key in st.session_state:
+                del st.session_state[key]
+else:
+    file_hash = None
 
 # Skip rows parameter
 skip_rows = st.sidebar.number_input(
@@ -159,14 +169,15 @@ color_mode_param = COLOR_MODE_MAPPING[color_mode]
 # CACHED DATA LOADING FUNCTION
 # ============================================================================
 @st.cache_data(show_spinner=False)
-def load_blockmodel_data(csv_path: str, skip_rows: int, cache_version: int = 2):
+def load_blockmodel_data(csv_path: str, skip_rows: int, file_hash: str, cache_version: int = 3):
     """
     Cached data loading function to prevent reloading data on every parameter change.
-    Cache is invalidated only when csv_path or skip_rows changes.
+    Cache is invalidated only when csv_path, skip_rows, or file_hash changes.
 
     Args:
         csv_path: Path to CSV file
         skip_rows: Number of header rows to skip
+        file_hash: Hash of the uploaded file contents
         cache_version: Version number to invalidate cache when data structure changes
     """
     viz = BlockModelVisualizer(csv_path, skip_rows=skip_rows)
@@ -233,7 +244,7 @@ if csv_file is not None:
         # STAGE 1: Load data (cached)
         # ====================================================================
         with st.spinner("Stage 1/3: Loading data from CSV..."):
-            viz = load_blockmodel_data(csv_file, skip_rows, cache_version=2)
+            viz = load_blockmodel_data(csv_file, skip_rows, file_hash, cache_version=3)
 
         # Data loaded successfully (cache handled by @st.cache_data decorator)
         st.sidebar.success("Data loaded successfully")
