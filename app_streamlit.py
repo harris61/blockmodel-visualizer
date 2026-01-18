@@ -41,6 +41,7 @@ from config import (
     APP_TITLE,
     APP_ICON,
     APP_VERSION,
+    APP_VERSION_DISPLAY,
     DEFAULT_SKIP_ROWS,
     DEFAULT_OPACITY,
     DEFAULT_MARKER_SIZE,
@@ -71,7 +72,7 @@ st.set_page_config(
 st.markdown(get_custom_css(), unsafe_allow_html=True)
 
 # Display header
-st.markdown(get_header_html(APP_VERSION), unsafe_allow_html=True)
+st.markdown(get_header_html(APP_VERSION_DISPLAY), unsafe_allow_html=True)
 
 # Sidebar header (app info + credits)
 img = Image.open("2.png")
@@ -79,7 +80,7 @@ buffered = BytesIO()
 img.save(buffered, format="PNG")
 img_str = base64.b64encode(buffered.getvalue()).decode()
 
-st.sidebar.markdown(get_footer_html(img_str, APP_VERSION), unsafe_allow_html=True)
+st.sidebar.markdown(get_footer_html(img_str, APP_VERSION_DISPLAY), unsafe_allow_html=True)
 
 # Sidebar for file selection and parameters
 

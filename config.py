@@ -28,6 +28,7 @@ def _get_git_tag() -> str | None:
 
 
 APP_VERSION = os.getenv("APP_VERSION") or _get_git_tag() or "1.0.0"
+APP_VERSION_DISPLAY = APP_VERSION if APP_VERSION.startswith("v") else f"v{APP_VERSION}"
 APP_TITLE = "Block Model Column Calculator"
 APP_ICON = "B"
 
