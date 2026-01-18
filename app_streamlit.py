@@ -40,6 +40,7 @@ from templates import (
 from config import (
     APP_TITLE,
     APP_ICON,
+    APP_VERSION,
     DEFAULT_SKIP_ROWS,
     DEFAULT_OPACITY,
     DEFAULT_MARKER_SIZE,
@@ -70,7 +71,7 @@ st.set_page_config(
 st.markdown(get_custom_css(), unsafe_allow_html=True)
 
 # Display header
-st.markdown(get_header_html(), unsafe_allow_html=True)
+st.markdown(get_header_html(APP_VERSION), unsafe_allow_html=True)
 
 # Sidebar header (app info + credits)
 img = Image.open("2.png")
@@ -78,7 +79,7 @@ buffered = BytesIO()
 img.save(buffered, format="PNG")
 img_str = base64.b64encode(buffered.getvalue()).decode()
 
-st.sidebar.markdown(get_footer_html(img_str), unsafe_allow_html=True)
+st.sidebar.markdown(get_footer_html(img_str, APP_VERSION), unsafe_allow_html=True)
 
 # Sidebar for file selection and parameters
 
@@ -316,7 +317,7 @@ if csv_file is not None:
 
         # Radio button to choose attribute type
         attr_type = st.radio(
-            "Pilih tipe attribute:",
+            "Select attribute type:",
             ["Numeric", "Categorical"],
             horizontal=True,
             key="attr_type_radio"

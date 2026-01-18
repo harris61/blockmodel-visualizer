@@ -1,27 +1,27 @@
 # Block Model Column Calculator
 
-Interactive web-based tool untuk visualisasi block model tambang menggunakan point cloud 3D. Mendukung perhitungan thickness dan stripping ratio untuk pit optimization.
+Interactive web-based tool for mining block model visualization using 3D point clouds. Supports thickness and stripping ratio calculations for pit optimization.
 
-![Version](https://img.shields.io/badge/version-2.1-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Python](https://img.shields.io/badge/python-3.8+-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
 ## ✨ Features
 
-- 🎯 **3D Point Cloud Visualization** - Fast rendering untuk dataset besar
-- 📊 **Block Sum (Vertical)** - Collapse blok vertikal per kolom (X,Y)
-- 📏 **Thickness Calculation** - Hitung ketebalan per kategori material
-- ⚖️ **Stripping Ratio Calculation** - Hitung SR (OB/Ore) per kolom untuk pit optimization
-- 🎨 **Interactive 3D Controls** - Rotate, zoom, pan dengan mouse
-- 📁 **Multi-format Support** - Surpac, Datamine, dan format CSV standar
-- 💾 **Export Results** - Export hasil perhitungan ke CSV dengan metadata
+- 🎯 **3D Point Cloud Visualization** - Fast rendering for large datasets
+- 📊 **Block Sum (Vertical)** - Collapse vertical blocks per (X,Y) column
+- 📏 **Thickness Calculation** - Compute thickness per material category
+- ⚖️ **Stripping Ratio Calculation** - Compute SR (OB/Ore) per column for pit optimization
+- 🎨 **Interactive 3D Controls** - Rotate, zoom, and pan with the mouse
+- 📁 **Multi-format Support** - Surpac, Datamine, and standard CSV
+- 💾 **Export Results** - Export calculations to CSV with metadata
 - 🎨 **Modern UI** - Clean, professional interface
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.8 atau lebih baru
+- Python 3.8 or later
 - pip (Python package manager)
 
 ### Installation
@@ -43,34 +43,34 @@ pip install streamlit pandas plotly numpy
 streamlit run app_streamlit.py
 ```
 
-Aplikasi akan terbuka di browser pada `http://localhost:8501`
+The app opens in your browser at `http://localhost:8501`
 
 ## 📖 Usage Guide
 
 ### 1️⃣ Upload Block Model
-- Upload file CSV (format Surpac/Datamine)
-- Atur "Rows to skip" untuk metadata (default: 3)
+- Upload a CSV file (Surpac/Datamine format)
+- Set "Rows to skip" for metadata (default: 3)
 
 ### 2️⃣ Block Sum Configuration
-- **Sum All**: Penjumlahan standar semua blok vertikal
-- **Calculate Thickness**: Hitung thickness per kategori (OB, Ore, Waste)
-- **Calculate Stripping Ratio**: Hitung SR = thickness_OB / thickness_Ore per kolom
+- **Sum All**: Standard summation of all vertical blocks
+- **Calculate Thickness**: Calculate thickness per category (OB, Ore, Waste)
+- **Calculate Stripping Ratio**: Calculate SR = thickness_OB / thickness_Ore per column
 
 ### 3️⃣ Visualize
-- Pilih attribute untuk visualisasi (grade, tonnage, SR, dll)
-- Point cloud 3D otomatis muncul
-- Gunakan mouse untuk rotate, zoom, dan pan
+- Select an attribute for visualization (grade, tonnage, SR, etc.)
+- 3D point cloud appears automatically
+- Use the mouse to rotate, zoom, and pan
 
 ### 4️⃣ Export
-- Download hasil perhitungan sebagai CSV
-- Termasuk kolom baru: `thickness_OB`, `thickness_Ore`, `stripping_ratio`
+- Download calculation results as CSV
+- Includes new columns: `thickness_OB`, `thickness_Ore`, `stripping_ratio`
 
 ## ⚠️ Important Notes
 
-1. **Hanya untuk Block Model**, tidak mendukung Stratigraphic Model
-2. **Format**: hanya .csv (Surpac, Datamine, atau format standar)
-3. **Visualisasi**: menggunakan Point Cloud untuk performa optimal
-4. **Thickness/SR**: hanya mendukung categorical attributes (Text/String)
+1. **Block Models only**; Stratigraphic Models are not supported
+2. **Format**: only .csv (Surpac, Datamine, or standard format)
+3. **Visualization**: uses Point Cloud for optimal performance
+4. **Thickness/SR**: only supports categorical attributes (Text/String)
 
 ## 📁 File Structure
 
@@ -92,14 +92,14 @@ blockmodel/
 - Standard CSV with X, Y, Z coordinates
 
 ### Required Columns
-- Coordinate columns: `xc`, `yc`, `zc` (atau `centroid_x`, `centroid_y`, `centroid_z`)
-- Dimension column (optional): `dz`, `zinc`, `dim_z` untuk thickness calculation
-- Categorical attributes (optional): untuk thickness/SR calculation
+- Coordinate columns: `xc`, `yc`, `zc` (or `centroid_x`, `centroid_y`, `centroid_z`)
+- Dimension column (optional): `dz`, `zinc`, `dim_z` for thickness calculation
+- Categorical attributes (optional): for thickness/SR calculation
 
 ### Performance
 - Optimal: < 100,000 blocks
 - Good: 100,000 - 500,000 blocks
-- Slow: > 500,000 blocks (gunakan Block Sum untuk optimisasi)
+- Slow: > 500,000 blocks (use Block Sum for optimization)
 
 ## 🎨 Screenshots
 

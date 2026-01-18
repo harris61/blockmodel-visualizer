@@ -4,12 +4,30 @@ Configuration and Constants for Block Model Column Calculator
 This module contains all configuration values and constants used throughout the application.
 """
 
+import os
+import subprocess
+from pathlib import Path
 from typing import List, Dict
 
 # ==============================================================================
 # APPLICATION METADATA
 # ==============================================================================
-APP_VERSION = "1.0"
+def _get_git_tag() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            cwd=Path(__file__).resolve().parent,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        tag = result.stdout.strip()
+        return tag if tag else None
+    except Exception:
+        return None
+
+
+APP_VERSION = os.getenv("APP_VERSION") or _get_git_tag() or "1.0.0"
 APP_TITLE = "Block Model Column Calculator"
 APP_ICON = "B"
 

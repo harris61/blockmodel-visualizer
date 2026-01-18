@@ -210,8 +210,7 @@ def render_block_sum_controls(viz: BlockModelVisualizer) -> Optional[str]:
             data=csv_data,
             file_name=download_filename,
             mime="text/csv",
-            use_container_width=True,
-            help=f"Download {'summed' if st.session_state.is_summed else 'original'} data as CSV (Datamine format with metadata)"
+            use_container_width=True
         )
 
     # Status Info
