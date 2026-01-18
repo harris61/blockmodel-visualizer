@@ -53,7 +53,7 @@ def get_important_notes_html() -> str:
     <h2 style='color: #0f172a; margin-top: 0;'>Important Notes</h2>
     <div style='background: #f8fafc; padding: 1rem; border-radius: 8px; margin-top: 0.75rem;'>
         <ol style='color: #334155; margin: 0; line-height: 1.8;'>
-            <li><strong>Only supports Block Models</strong>; Stratigraphic Models are not supported</li>
+            <li><strong>Only supports Block Models</strong>: Stratigraphic Models are not supported</li>
             <li><strong>Supported file format:</strong> Block Models must be provided as .csv (Surpac, Datamine, etc.)</li>
             <li><strong>Visualization uses point clouds</strong> for performance</li>
             <li><strong>Material classification attributes:</strong> classification attributes must be text/string type</li>
