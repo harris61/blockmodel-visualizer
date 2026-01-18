@@ -7,12 +7,12 @@ This module contains all configuration values and constants used throughout the 
 import os
 import subprocess
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List, Optional
 
 # ==============================================================================
 # APPLICATION METADATA
 # ==============================================================================
-def _get_git_tag() -> str | None:
+def _get_git_tag() -> Optional[str]:
     try:
         result = subprocess.run(
             ["git", "describe", "--tags", "--abbrev=0"],
