@@ -41,7 +41,6 @@ from config import (
     APP_TITLE,
     APP_ICON,
     APP_VERSION,
-    APP_VERSION_DISPLAY,
     DEFAULT_SKIP_ROWS,
     DEFAULT_OPACITY,
     DEFAULT_MARKER_SIZE,
@@ -52,6 +51,10 @@ from config import (
     SUPPORTED_FILE_TYPES,
     TEMP_UPLOAD_FILE
 )
+try:
+    from config import APP_VERSION_DISPLAY
+except ImportError:
+    APP_VERSION_DISPLAY = APP_VERSION if APP_VERSION.startswith("v") else f"v{APP_VERSION}"
 from ui_components import (
     initialize_session_state,
     render_block_sum_config,
